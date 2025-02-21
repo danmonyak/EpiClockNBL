@@ -1,0 +1,167 @@
+---
+title: "GSEA Figures"
+author: "Shannon T. Holloway"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  cancer_type: "NBL"
+  cls_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma_c_beta.cls"
+  pos_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma.Gsea.1733456225610/gsea_report_for_neuroblastoma_c_beta_pos_1733456225610.tsv"
+  neg_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma.Gsea.1733456225610/gsea_report_for_neuroblastoma_c_beta_neg_1733456225610.tsv"
+  names:
+    - "$C_{\\beta}$"
+    - "$C_{\\beta}^{\\alpha}$"
+  fdr_limit: 0.1
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(ggsci)
+library(latex2exp)
+```
+
+```{r echo = FALSE}
+prettier <- list()
+
+prettier[[1L]] <- c("APICAL_JUNCTION", "Cellular Component", "Apical Junction")
+prettier[[2L]] <- c("APICAL_SURFACE", "Cellular Component", "Apical Surface")
+prettier[[3L]] <- c("PEROXISOME", "Cellular Component", "Peroxisomes")
+prettier[[4L]] <- c("ADIPOGENESIS", "Development", "Adipogenesis")
+prettier[[5L]] <- c("ANGIOGENESIS", "Development", "Angiogenesis")
+prettier[[6L]] <- c("EPITHELIAL_MESENCHYMAL_TRANSITION", "Development", "Epithelial Mesenchymal Transition")
+prettier[[7L]] <- c("MYOGENESIS", "Development", "Myogenesis")
+prettier[[8L]] <- c("SPERMATOGENESIS", "Development", "Spermatogenesis")
+prettier[[9L]] <- c("PANCREAS_BETA_CELL", "Development", "Pancreas Beta Cell")
+prettier[[10L]] <- c("DNA_REPAIR", "DNA Damage", "DNA Repair")
+prettier[[11L]] <- c("UV_RESPONSE_DN", "DNA Damage", "UV Response Down")
+prettier[[12L]] <- c("UV_RESPONSE_UP", "DNA Damage", "UV Response Up")
+prettier[[13L]] <- c("ALLOGRAFT_REJECTION", "Immune", "Allograft Rejection")
+prettier[[14L]] <- c("COAGULATION", "Immune", "Coagulation")
+prettier[[15L]] <- c("COMPLEMENT", "Immune", "Complement")
+prettier[[16L]] <- c("INTERFERON_ALPHA_RESPONSE", "Immune", "Interferon Alpha Response")
+prettier[[17L]] <- c("INTERFERON_GAMMA_RESPONSE", "Immune", "Interferon Gamma Response")
+prettier[[18L]] <- c("IL6_JAK_STAT3_SIGNALING", "Immune", "IL6 JAK STAT3 signaling")
+prettier[[19L]] <- c("INFLAMMATORY_RESPONSE", "Immune", "Inflammatory Response")
+prettier[[20L]] <- c("BILE_ACID_METABOLISM", "Metabolic", "Bile Acide Metabolism")
+prettier[[21L]] <- c("CHOLESTEROL_HOMEOSTASIS", "Metabolic", "Cholesterol Homeostasis")
+prettier[[22L]] <- c("FATTY_ACID_METABOLISM", "Metabolic", "Fatty Acid Metabolism")
+prettier[[23L]] <- c("GLYCOLYSIS", "Metabolic", "Glycolysis")
+prettier[[24L]] <- c("HEME_METABOLISM", "Metabolic", "Heme Metabolism")
+prettier[[25L]] <- c("OXIDATIVE_PHOSPHORYLATION", "Metabolic", "Oxidative Phosphorylation")
+prettier[[26L]] <- c("XENOBIOTIC_METABOLISM", "Metabolic", "Xenobiotic Metabolism")
+prettier[[27L]] <- c("APOPTOSIS", "Pathway", "Apoptosis")
+prettier[[28L]] <- c("HYPOXIA", "Pathway", "Hypoxia")
+prettier[[29L]] <- c("PROTEIN_SECRETION", "Pathway", "Protein Secretion")
+prettier[[30L]] <- c("UNFOLDED_PROTEIN_RESPONSE", "Pathway", "Unfolded Protein Response")
+prettier[[31L]] <- c("REACTIVE_OXYGEN_SPECIES_PATHWAY", "Pathway", "Reactive Oxygen Species Pathway")
+prettier[[32L]] <- c("E2F_TARGETS", "Proliferation", "E2F Targets")
+prettier[[33L]] <- c("G2M_CHECKPOINT", "Proliferation", "G2/M Checkpoint")
+prettier[[34L]] <- c("MYC_TARGETS_V1", "Proliferation", "MYC Targets Variant 1")
+prettier[[35L]] <- c("MYC_TARGETS_V2", "Proliferation", "MYC Targets Variant 2")
+prettier[[36L]] <- c("P53_PATHWAY", "Proliferation", "p53 Pathway")
+prettier[[37L]] <- c("MITOTIC_SPINDLE", "Proliferation", "Mitotic Spindle")
+prettier[[38L]] <- c("ANDROGEN_RESPONSE", "Signaling", "Androgen Response")
+prettier[[39L]] <- c("ESTROGEN_RESPONSE_EARLY", "Signaling", "Estrogen Response Early")
+prettier[[40L]] <- c("ESTROGEN_RESPONSE_LATE", "Signaling", "Estrogen Response Late")
+prettier[[41L]] <- c("IL2_STAT5_SIGNALING", "Signaling", "IL2 JAK STAT5 Signaling")
+prettier[[42L]] <- c("KRAS_SIGNALING_UP", "Signaling", "KRAS Signaling Up")
+prettier[[43L]] <- c("KRAS_SIGNALING_DN", "Signaling", "KRAS Signaling Down")
+prettier[[44L]] <- c("MTORC1_SIGNALING", "Signaling", "mTORC1 Signaling")
+prettier[[45L]] <- c("NOTCH_SIGNALING", "Signaling", "Notch Signaling")
+prettier[[46L]] <- c("PI3K_AKT_MTOR_SIGNALING", "Signaling", "PI3K AKT mTOR Signaling")
+prettier[[47L]] <- c("HEDGEHOG_SIGNALING", "Signaling", "Hedgehog Signaling")
+prettier[[48L]] <- c("TGF_BETA_SIGNALING", "Signaling", "TGF Beta Signaling")
+prettier[[49L]] <- c("TNFA_SIGNALING_VIA_NFKB", "Signaling", "TNFA Signaling via NFkB")
+prettier[[50L]] <- c("WNT_BETA_CATENIN_SIGNALING", "Signaling", "WNT Beta Catenin Signaling")
+
+prettier <- do.call(rbind, prettier) |> as.data.frame()
+colnames(prettier) <- c("NAME", "CAT", "PrettyName")
+```
+
+```{r echo = FALSE}
+extract_data <- function(fdr.limit) {
+  data_pos <- read.csv(params$pos_file, sep = "\t")
+  data_neg <- read.csv(params$neg_file, sep = "\t")
+  df <- rbind(data_pos, data_neg)
+  fdr <- df$FDR.q.val <= fdr.limit
+  df <- df[fdr, ]
+
+  df$type <- df$NES >= 0.0
+  df <- df[order(df$NES, decreasing = TRUE), ]
+  df$order <- 1L:nrow(df)
+
+  df$NAME <- gsub("HALLMARK_", "", df$NAME)
+  df$NAME <- gsub("_", " ", df$NAME)
+
+  idx <- match(df$NAME, gsub("_", " ", prettier$NAME))
+  df$Process <- prettier$CAT[idx]
+  df
+}
+```
+
+```{r echo = FALSE}
+plot_data <- function(data, name) {
+  col_jco <- pal_jco("default")(10)
+
+  colors <- c("DNA Damage" = col_jco[8], 
+              "Metabolic" = col_jco[3], 
+              "Immune" = col_jco[4], 
+              "Proliferation" = col_jco[2], 
+              "Signaling" = col_jco[10], 
+              "Cellular Component" = col_jco[6], 
+              "Development" = col_jco[5], 
+              "Pathway" = col_jco[1])
+  
+  q_labels <- format(data$FDR.q.val, digits = 3L, scientific = FALSE)
+  
+  q_labels <- paste0("", q_labels)
+  
+  text_younger <- grid::textGrob("\u2190 Younger", gp=grid::gpar(fontsize=6, fontface="bold"))
+  text_older <- grid::textGrob("Older \u2192", gp=grid::gpar(fontsize=6, fontface="bold"))
+  
+  data_str <- readLines(params$cls_file)[-(1:2)]
+  num_tumors <- length(unlist(gregexpr("\t", data_str))) + 1
+
+  gg <- suppressWarnings(
+    ggplot(data, aes(NES, fill = Process)) +
+    geom_rect(aes(ymin = order - 0.4, ymax = order + 0.4, xmin = 0, xmax = NES)) +
+    labs(title = TeX(paste0(params$cancer_type, " Gene Set Analysis - ", name, " Phenotype ", "(n = ", num_tumors, ")"))) +
+    ylab("Hallmark Pathway") +
+    xlab("Normalized Enrichment Score") +
+    scale_y_continuous(breaks = 1:nrow(data), labels = data$NAME) + 
+    scale_fill_manual(values = colors)+
+    annotation_custom(text_younger, xmax = -1, ymin = -4, ymax = -4) +
+    annotation_custom(text_older, xmin = 1, ymin = -4, ymax = -4) +
+    annotate(geom = "text",   # this annotation will likely be removed for publication
+             x = c(rep(-0.8, sum(data$NES > 0)),
+                   rep( 0.8, sum(data$NES < 0))), 
+             y = data$order, 
+             label = q_labels,
+             color="black", size = 3) +
+    theme(axis.text.y = element_text(size = 9), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(), 
+          axis.line = element_line(colour = "black")))  + 
+    coord_cartesian(clip="off")
+  
+  ggsave("~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/gsea_plot.png", plot = gg)
+  gg
+}
+```
+
+```{r echo = FALSE}
+for (i in 1L:1L) {
+   cat("\n")
+   cat("#### ", params$names[i], "\n")
+   cat("\n")
+   
+  data <- extract_data(fdr.limit = params$fdr_limit)
+  
+  plot_data(data = data, name = params$names[i]) |> print()
+  cat("\n")
+  cat("\n")
+}
+```
+

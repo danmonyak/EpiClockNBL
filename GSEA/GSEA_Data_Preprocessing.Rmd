@@ -1,0 +1,164 @@
+---
+title: "Preprocessing Gene Expression Data for GSEA"
+author: "Shannon T. Holloway"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  project: "TARGET-NBL" # CANCER
+  dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/"
+  out_dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/"
+  GDCdata_dir: "GDC_data"
+  count_data_file: "TARGET/cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
+  c_beta_file: "TARGET/NBL.c_beta.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids
+  output_gct_file: "neuroblastoma_deseq_scale_factor"
+  output_cls_file: "neuroblastoma_c_beta"
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DESeq2)
+library(TCGAbiolinks)
+```
+
+Expression count data must be normalized for between-sample comparisons. 
+
+Per a 12/16/2022 post by Anothy Castanza on the gsea google group
+"Generally, the recommendation that I give is to use the DESeq2 sizeFactor 
+    correction “counts( , normalized = TRUE)” method. I will admit that our 
+    testing of normalization methods for RNA-seq data for input into GSEA was 
+    not particularly comprehensive, but the sizeFactor correction appeared to 
+    perform well (hence our recommendation)."
+
+Per a 3/27/2024 email with Xiaodi Qin, DESeq2 vst() might be an option as well. 
+After exploring this, the vst() is not on natural scale;
+cor(scaleFator, 2^vst) = 1
+
+## Load Raw Counts data 
+
+Load the object returned by TCGAbiolinks in the data prep step. Not this is the 
+object not just the matrix returned. This will require adding `save = TRUE, 
+save.filename = filename` as inputs to the GDCprepare call.
+
+```{r load_counts_data}
+library(DESeq2)
+
+data <- readRDS(paste0(params$dir, params$count_data_file))
+is(data)
+
+data$gene_id <- sub("\\..*", "", data$gene_id)
+
+colnames(data) <- sub("-01A.*", "-01A", colnames(data))
+colnames(data) <- sub("-01B.*", "-01B", colnames(data))
+colnames(data) <- sub("-01C.*", "-01C", colnames(data))
+
+
+```
+
+## Load the C-beta
+
+We load the c-beta values here to ensure that the final normalized count matrix is in the same order as the phenotype.
+
+```{r read_c_beta}
+c_beta_measured <- read.table(paste0(params$dir, params$c_beta_file), sep = "\t", header = FALSE)
+
+c_beta_measured <- t(c_beta_measured)
+
+c_beta_measured <- as.data.frame(c_beta_measured)
+
+colnames(c_beta_measured) <- c_beta_measured[1, ]
+
+shared_tumors <- intersect(colnames(data), colnames(c_beta_measured))
+
+data <- data[, c(shared_tumors, "gene_id", "gene_name"), drop = FALSE]
+
+c_beta_measured <- c_beta_measured[, shared_tumors, drop = FALSE]
+
+tumor_order <- head(colnames(data), -2)
+
+c_beta_measured <- c_beta_measured[, tumor_order]
+
+c_beta_measured <- c_beta_measured[-1, ]
+
+c_beta_measured <- as.matrix(c_beta_measured)
+
+colnames(c_beta_measured) <- gsub(".", "-", colnames(c_beta_measured), fixed = TRUE)
+
+
+```
+
+## DESeq2 using estimating scale factor
+
+```{r deseq_scale_factor}
+# design ~ 1 means we aren't grouping based on categories such as batch, normal/tumor, etc.
+deseq_data <- data[, !(colnames(data) %in% c("gene_id", "gene_name"))]
+rownames(deseq_data) <- data$gene_id
+colData <- data.frame(condition = factor(rep("tumor", ncol(deseq_data))))
+rownames(colData) <- colnames(deseq_data)
+# 
+dds <- DESeqDataSetFromMatrix(countData = deseq_data,
+                              colData = colData,
+                              design = ~ 1)
+
+# small scale thining for genes with extremely low counts
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+
+# Estimate size factor and extract normalized counts
+dds <- estimateSizeFactors(dds)
+deseq_normal <- counts(dds, normalized = TRUE)
+
+# keep only those tumors that pertain to our analysis
+idx <- match(substr(colnames(c_beta_measured), 1L, 16L),
+             substr(colnames(deseq_normal), 1L, 16L))
+if (any(is.na(idx))) stop("tumor names do not match; something is wrong")
+deseq_normal <- deseq_normal[, idx]
+
+cat("The names in each dataset line up?",
+    isTRUE(all.equal(substr(colnames(c_beta_measured), 1, 16),
+                     substr(colnames(deseq_normal), 1, 16))), "\n")
+```
+
+## Save gct and cls objects
+
+```{r convert_function}
+.convertToGCT <- function(x) {
+  x_df <- as.data.frame(x)
+  x_df <- cbind("Description" = NA, x_df)
+  row.names(x_df) <- sub("\\..*", "", row.names(x_df))
+  x_df <- cbind("Name" = row.names(x_df), x_df)
+  x_df
+}
+```
+
+```{r save_gct_function}
+.createGCT <- function(x, pth, nm) {
+  print(nm)
+  cat("#1.2\n", file = paste0(pth, nm, ".gct"), append = FALSE)
+  cat(paste0(nrow(x), "\t", ncol(x), "\n"), file = paste0(pth, nm, ".gct"), append = TRUE)
+  x <- .convertToGCT(x)
+  cat(paste(colnames(x), collapse = "\t"), "\n", file = paste0(pth, nm, ".gct"), append = TRUE)
+  write.table(x,
+              file = paste0(pth, nm, ".gct"),
+              sep = "\t", quote = FALSE, row.names = FALSE,
+              col.names = FALSE, append = TRUE)
+}
+```
+
+```{r create_gct_outputs}
+.createGCT(deseq_normal, pth = params$out_dir, nm = params$output_gct_file)
+```
+
+```{r save_cls_function}
+.createCLS <- function(x, pth, nm) {
+  cat("#numeric\n", file = paste0(pth, nm, ".cls"), append = FALSE)
+  cat(paste0("#", nm, "\n"), file = paste0(pth, nm, ".cls"), append = TRUE)
+  write.table(t(drop(x[1L, ])),
+              file = paste0(pth, nm, ".cls"),
+              sep = "\t", quote = FALSE, row.names = FALSE,
+              col.names = FALSE, append = TRUE)
+}
+```
+
+```{r create_cls_outputs}
+.createCLS(c_beta_measured, pth = params$out_dir, nm = params$output_cls_file)
+```
