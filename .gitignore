@@ -1,0 +1,5 @@
+# Ignore entire TARGET_GMM_STAN_cache folder
+TARGET_GMM_STAN_cache/
+
+# Ignore entire TARGET_GMM_STAN_files folder
+TARGET_GMM_STAN_files/
