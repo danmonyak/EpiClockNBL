@@ -2,6 +2,7 @@
     "boxdir":"/Users/grahamgumbert/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper",
     "official_indir": "/Users/grahamgumbert/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets",
     "official_indir_test": "/Users/grahamgumbert/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets_test",
+    "BRCA_official_indir": "/Users/grahamgumbert/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/MolClock_Paper_1/1. Analytic Datasets",
     "repo_dir": "/Users/grahamgumbert/Documents/GitHub/EpiClockNBL",
     "repo_datadir": "/Users/grahamgumbert/Documents/GitHub/EpiClockNBL/data",
     "CPE_threshold":0.6,

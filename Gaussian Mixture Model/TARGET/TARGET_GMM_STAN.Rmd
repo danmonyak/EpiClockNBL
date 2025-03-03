@@ -8,7 +8,7 @@ output:
   word_document: default
 params:
   cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/TARGET/"
-  beta_vals_file: NBL.methyl.antiNonIterClustNotStuck_sites.tsv
+  beta_vals_file: NBL.methyl.traditional_sites.tsv
 ---
 
 ```{r setup, include=FALSE}
@@ -94,8 +94,7 @@ sm <- stan_model(model_code = stan_code)
 
 results_list <- list()
 
-# for (j in 1:ncol(tumor_data)) {
-for (j in 1:3) {
+for (j in 1:ncol(tumor_data)) {
   tumor_id <- colnames(tumor_data)[j]
   y <- tumor_data[[tumor_id]]
   y <- y[!is.na(y)]
