@@ -5,3 +5,5 @@ TARGET_GMM_STAN_cache/
 TARGET_GMM_STAN_files/
 
 consts.json
+__pycache__
+.DS_Store
