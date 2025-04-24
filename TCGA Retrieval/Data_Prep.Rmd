@@ -73,8 +73,10 @@ Of the `r length(participant_subset)` participants of interest, `r length(unique
 # methyl_tumor_ids <- methyl_tumor_ids[1:10]
 
 common_tumors <- sort(methyl_tumor_ids)
-dups <- duplicated(getParticipantIDs(common_tumors)) | 
+duplicated.participants <- duplicated(getParticipantIDs(common_tumors)) |
   duplicated(getParticipantIDs(common_tumors), fromLast = TRUE)
+duplicated.tumors <- duplicated(common_tumors) | duplicated(common_tumors, fromLast = TRUE)
+dups <- duplicated.participants & !duplicated.tumors
 ```
 `r if(any(dups)) {paste("Participants with multiple tumors: ", paste(unique(getParticipantIDs(common_tumors)[dups]), collapse = ", "), ".")}`
 
@@ -83,15 +85,8 @@ has_multiple_tumors <- query_clinical$submitter_id %in% {getParticipantIDs(commo
 query_clinical$note_multiple_tumors <- has_multiple_tumors
 
 print(common_tumors[dups])
-
-# We drop the "B" tumor for each participant
-# common_tumors <- setdiff(common_tumors, 
-#                          paste0(getParticipantIDs(common_tumors[dups]), "-01B"))
-
-# Keep the first tumor (alphabetically)
-common_tumors <- common_tumors[! duplicated(getParticipantIDs(common_tumors))]
 ```
-There are `r length(common_tumors)` tumors with methylation data and CPE purity $\ge 0.6$; `r sum(duplicated(getParticipantIDs(common_tumors)))` of which are from the same participant.
+There are `r length(unique(common_tumors))` tumors with methylation data; `r sum(duplicated(getParticipantIDs(common_tumors)))` of which are from the same participant.
 
 #### Identify Dataset Participants in Clinical Data
 
