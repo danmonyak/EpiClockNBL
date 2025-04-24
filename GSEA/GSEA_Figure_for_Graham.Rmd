@@ -6,8 +6,8 @@ output: html_document
 params:
   cancer_type: "NBL"
   cls_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma_c_beta.cls"
-  pos_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/EpiClockNBL_GSEA.Gsea.1740728417283/gsea_report_for_neuroblastoma_c_beta_pos_1740728417283.tsv"
-  neg_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/EpiClockNBL_GSEA.Gsea.1740728417283/gsea_report_for_neuroblastoma_c_beta_neg_1740728417283.tsv"
+  pos_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/NBL_cluster_gmm_phi.Gsea.1741669700509/gsea_report_for_neuroblastoma_gmm_phi_pos_1741669700509.tsv"
+  neg_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/NBL_cluster_gmm_phi.Gsea.1741669700509/gsea_report_for_neuroblastoma_gmm_phi_neg_1741669700509.tsv"
   names:
     - "$C_{\\beta}$"
     - "$C_{\\beta}^{\\alpha}$"

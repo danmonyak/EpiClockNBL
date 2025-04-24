@@ -9,9 +9,9 @@ params:
   out_dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/"
   GDCdata_dir: "GDC_data"
   count_data_file: "TARGET/cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
-  c_beta_file: "TARGET/NBL.c_beta.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
+  c_beta_file: "TARGET/NBL.gmm_phi.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
   output_gct_file: "neuroblastoma_deseq_scale_factor"
-  output_cls_file: "neuroblastoma_c_beta"
+  output_cls_file: "neuroblastoma_gmm_phi"
 ---
   
   ```{r setup, include=FALSE}
