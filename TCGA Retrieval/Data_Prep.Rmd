@@ -4,16 +4,14 @@ date: "`r Sys.Date()`"
 output: html_document
 params:
   project: TARGET-NBL
-  purity_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/MolClock_Paper_1/1. Analytic Datasets/TCGA/ncomms9971-s2.csv"
   save_data: true
   save_data_as_rds: true
-  save_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/TARGET/"
+  save_path: "/Users/danielmonyak/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/TARGET/"
   GDCdata_dir: "gdc_data"
-  rm_GDCdata_dir: false
-  clinical_filename: "cohort1.clinical"
-  methyl_filename: "cohort1.methyl"
-  gene_filename: "cohort1.rnaseq"
-  cnv_filename: "cohort1.cnv"
+  rm_GDCdata_dir: False
+  clinical_filename: "cohort1.clinical.TEST"
+  methyl_filename: "cohort1.methyl.TEST"
+  gene_filename: "cohort1.rnaseq.TEST"
 ---
 
 ```{r setup, include=FALSE}
@@ -71,6 +69,10 @@ Of the `r length(participant_subset)` participants of interest, `r length(unique
 
 ```{r multiple_tumor_per_participant, echo = FALSE}
 # methyl_tumor_ids <- methyl_tumor_ids[1:10]
+# methyl_tumor_ids <- c("TARGET-30-PAIFXV-01A", "TARGET-30-PAISNS-01A",
+#                       "TARGET-30-PAITCI-01A", "TARGET-30-PAIVHE-01A",
+#                       "TARGET-30-PAIVMJ-01A", "TARGET-30-PAIVZR-01A",
+#                       "TARGET-30-PAIXFZ-01A", "TARGET-30-PAKHAV-01A")
 
 common_tumors <- sort(methyl_tumor_ids)
 duplicated.participants <- duplicated(getParticipantIDs(common_tumors)) |
@@ -95,22 +97,28 @@ There are `r length(unique(common_tumors))` tumors with methylation data; `r sum
 query_clinical$in_CpG_dataset <- query_clinical$submitter_id %in% getParticipantIDs(common_tumors)
 
 # ensure that something did not go wrong
-code_given <- apply(query_clinical[, reasons], 1L, any)
+# code_given <- apply(query_clinical[, reasons], 1L, any)
+code_given <- query_clinical[, 'reason_methyl']
 
+################################################
+#################### delete ####################
 # There are some tumors that have methylation data but fail purity test or
 # pass purity test, but have no methylation data
-query_clinical$reason_methyl_and_purity <- !query_clinical$in_CpG_dataset & !code_given
-reasons <- c(reasons, "reason_methyl_and_purity")  
-code_given <- apply(query_clinical[, reasons], 1L, any)
 
-cat("The purity values for these tumors are\n")
-#print(purity_data[purity_participant_ids %in% query_clinical$submitter_id[query_clinical$reason_methyl_and_purity],])
-cat("The tumors with methylation data are\n")
-print(methyl_tumor_ids[methyl_participant_ids %in% query_clinical$submitter_id[query_clinical$reason_methyl_and_purity]])
+# query_clinical$reason_methyl_and_purity <- !query_clinical$in_CpG_dataset & !code_given
+# reasons <- c(reasons, "reason_methyl_and_purity")  
+# code_given <- apply(query_clinical[, reasons], 1L, any)
 
-colSums(query_clinical[, reasons])
+# cat("The tumors with methylation data are\n")
+# print(methyl_tumor_ids[methyl_participant_ids %in% query_clinical$submitter_id[query_clinical$reason_methyl_and_purity]])
 
-# The analysis dataset will be only the ductal tumors
+################################################
+################################################
+
+# colSums(query_clinical[, reasons])
+sum(query_clinical[, 'reason_methyl'])
+
+# The analysis dataset
 query_clinical$in_analysis_dataset <- query_clinical$in_CpG_dataset
 ```
 
@@ -118,7 +126,8 @@ ENSURE THESE TWO NUMBERS AGREE: `r sum(query_clinical$in_CpG_dataset)` and `r su
 
 The total number of cases removed for cause are as follows:
 ```{r}
-colSums(query_clinical[, c(reasons, "note_multiple_tumors")])
+# colSums(query_clinical[, c(reasons, "note_multiple_tumors")])
+colSums(query_clinical[, c('reason_methyl', "note_multiple_tumors")])
 ```
 
 #### Final Methylation Query
@@ -132,7 +141,6 @@ query_methyl <- GDCquery(project = params$project,
                          sample.type = c("Primary Tumor"),
                          data.type = "Methylation Beta Value",
                          barcode = unique(getParticipantIDs(common_tumors)))
-
 ```
 
 #### Query Gene Data
@@ -152,30 +160,6 @@ gene_participant_ids <- getParticipantIDs(getResults(query_gene, cols = "cases")
 gene_tumor_ids <- getTumorIDs(getResults(query_gene, cols = "cases"))
 ```
 For the `r sum(query_clinical$in_analysis_dataset)` participants in the analysis dataset, `r length(unique(gene_tumor_ids))` gene expression datasets are available. There are `r sum(duplicated(gene_participant_ids))` duplicated participant ids in the gene expression dataset and `r sum(duplicated(gene_tumor_ids))` duplicated tumor ids.
-
-#### Copy Number Variation Data
-
-Query CNV data for only those participants in the analysis dataset.
-
-```{r retrieve_final_dataset}
-query_cnv <- GDCquery(project = params$project, 
-                      data.category = 'Structural Variation', 
-                      platform = c("Affymetrix SNP 6.0"),
-                      sample.type = c("Primary Tumor"),
-                      data.type = "Copy Number Segment",
-                      barcode = query_clinical$submitter_id[query_clinical$in_analysis_dataset])
-cnv_cases <- getResults(query_cnv, cols = "cases")
-
-cnv_participant_ids <- getParticipantIDs(cnv_cases)
-cnv_tumor_ids <- getTumorIDs(cnv_cases)
-
-multiple_cnv_measurements <- cnv_cases[duplicated(cnv_tumor_ids) | duplicated(cnv_tumor_ids, fromLast = TRUE)]
-multiple_cnv_measurements
-
-# common_tumors <- common_tumors[! duplicated(getParticipantIDs(common_tumors))]
-duplicate_cnv_measurements <- cnv_cases[duplicated(cnv_tumor_ids)]
-```
-For the `r sum(query_clinical$in_analysis_dataset)` participants in the analysis dataset, `r length(unique(cnv_tumor_ids))` CNV datasets are available. There are `r sum(duplicated(cnv_participant_ids))` duplicated participant ids in the CNV dataset and `r sum(duplicated(cnv_tumor_ids))` duplicated tumor ids.
 
 #### Download and Save
 
@@ -240,12 +224,16 @@ methyl <- methyl[, getTumorIDs(colnames(methyl)) %in% common_tumors]
 dups <- duplicated(getTumorIDs(colnames(methyl)))
 cat("Tumors with multiple measurements:")
 print(getTumorIDs(colnames(methyl))[dups])
-print(colnames(methyl)[dups | duplicated(getTumorIDs(colnames(methyl)), fromLast = TRUE)])
+
+tumors.dups.methyl <- colnames(methyl)[dups | duplicated(getTumorIDs(colnames(methyl)), fromLast = TRUE)]
+print(tumors.dups.methyl)
 
 has_multiple_methyl <- query_clinical$submitter_id %in% getParticipantIDs(colnames(methyl))[dups]
 query_clinical$note_multiple_methyl <- has_multiple_methyl
 
-methyl <- methyl[, !dups]
+dups.remove <- tumors.dups.methyl[sapply(tumors.dups.methyl, function (x) substr(x, nchar(x)-2, nchar(x))) == '02D']
+methyl <- methyl[, !(colnames(methyl) %in% c(dups.remove))]
+
 write.table(methyl, 
             file = paste0(params$save_path, params$methyl_filename, ".tsv"), 
             sep = "\t")
@@ -257,31 +245,7 @@ dim(methyl)
 rm(methyl, data.methyl, query_methyl)
 ```
 
-##### CNV Data
-
-```{r download_and_save_cnv, eval = params$save_data}
-# download and save the DNA methylation data
-GDCdownload(query_cnv, directory = paste0(params$save_path, params$GDCdata_dir))
-data.cnv <- GDCprepare(query_cnv, 
-                       directory = paste0(params$save_path, params$GDCdata_dir))
-
-# subset to the specific tumors
-keep_samples <- getTumorIDs(data.cnv$Sample) %in% common_tumors
-cnv <- data.cnv[keep_samples, ]
-
-# removing duplicate measurements
-cnv <- cnv[!(cnv$Sample %in% duplicate_cnv_measurements), ]
-dim(cnv)
-
-write.table(cnv, 
-            file = paste0(params$save_path, params$cnv_filename, ".tsv"), 
-            sep = "\t")
-if (params$save_data_as_rds) saveRDS(cnv, 
-                                     file = paste0(params$save_path, 
-                                                   params$cnv_filename, 
-                                                   ".rds"))
-rm(cnv, data.cnv, query_cnv)
-```
+##### Clinical data
 
 ```{r download_and_save_clinical, eval = params$save_data}
 # save the clinical data
@@ -310,9 +274,8 @@ if (params$rm_GDCdata_dir) {
 #### Notes
 
 ```{r summary_of_notes, eval = params$save_data}
-colSums(query_clinical[, c(reasons, 
-                           "note_multiple_tumors", 
-                           "note_multiple_methyl")])
+# colSums(query_clinical[, c(reasons, "note_multiple_tumors", "note_multiple_methyl")])
+colSums(query_clinical[, c('reason_methyl', "note_multiple_tumors", "note_multiple_methyl")])
 ```
 
 The participants with multiple tumor samples are
