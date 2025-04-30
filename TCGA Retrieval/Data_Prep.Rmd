@@ -19,6 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # This package streamlines the data pull from GDC
 library(TCGAbiolinks)
+library(BiocFileCache) # Need to load this directly to set off hook in .Rprofile
+                       # deals with issue when calling GDCprepare
 library(plyr)
 
 keepN_fields <- function(x, n) {
