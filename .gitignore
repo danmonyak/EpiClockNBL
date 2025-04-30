@@ -8,3 +8,4 @@ consts.json
 __pycache__
 .DS_Store
 .Rhistory
+.ipynb_checkpoints
