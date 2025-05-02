@@ -407,70 +407,218 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
         fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)
         
         
-def plotTumorWise(data, CpG_list=None, sample_type='tumor', sample_list=None, n_samps=30, ncols=3, suptitle='random pick of samples', extra_titles=None, title_formats=None, xlabel='Beta', random_seed=None, data_obj='beta_values_SELECTION',
-                 outfile=False, outfile_name=None, outdir='images', choose_random=True, color='blue', ylim=None, bins='auto', figsize=None, text_fontsize=None, ticksfontsize=None, opacity=None, sf=1, tight_layout_pad=1):
+# def plotTumorWise(data, CpG_list=None, sample_type='tumor', sample_list=None, n_samps=30, ncols=3, suptitle='random pick of samples', extra_titles=None, title_formats=None, xlabel='Beta', random_seed=None, data_obj='beta_values_SELECTION',
+#                  outfile=False, outfile_name=None, outdir='images', choose_random=True, color='blue', ylim=None, bins='auto', figsize=None, text_fontsize=None, ticksfontsize=None, opacity=None, sf=1, tight_layout_pad=1):
+#     if sample_list is None:
+#         sample_list = data[sample_type]['pureSamples']
+    
+#     n_samps = min(n_samps, len(sample_list))
+#     nrows = ceil(n_samps / ncols)
+#     if CpG_list is None:
+#         if data_obj == "beta_decomp":
+#             CpG_list = data.index
+#         else:
+#             CpG_list = data[sample_type][data_obj].index
+        
+    
+#     if choose_random:
+#         np.random.seed(random_seed)
+#         samples_randSamp = np.random.choice(sample_list, n_samps, replace=False)
+#     else:
+#         samples_randSamp = sample_list[:n_samps]
+    
+#     if figsize is None:
+#         fig, axes = plt.subplots(nrows, ncols, figsize=(20 * sf, (3 + 3*nrows) * sf))
+#     else:
+#         fig, axes = plt.subplots(nrows, ncols, figsize=np.array(figsize) * sf)
+#     fig.suptitle(suptitle, y=0.99, fontsize=20, fontweight='bold')
+#     fig.tight_layout(pad=tight_layout_pad)
+    
+#     for i, samp in enumerate(samples_randSamp):
+#         col = i % ncols
+#         if nrows > 1:
+#             row = i // ncols
+#             ax = axes[row, col]
+#         else:
+#             if ncols == 1:
+#                 ax = axes
+#             else:
+#                 ax = axes[col]
+        
+#         if type(color) is list:
+#             cur_color = color[min(i, n_samps-1)]
+#         else:
+#             cur_color = color
+        
+#         if data_obj == "beta_decomp":
+#             plot_data = data.loc[CpG_list, samp]
+#         else:
+#             plot_data = data[sample_type][data_obj].loc[CpG_list, samp]
+#         plot = sns.histplot(ax=ax, data=plot_data,
+#                             stat='proportion', binrange=(0, 1),
+#                            color=cur_color, bins=bins, alpha=opacity)
+#         if extra_titles is not None:
+#             title = extra_titles[i]
+        
+#         if title_formats is None:
+#             title = samp
+#         else:
+#             if data_obj == "beta_decomp":
+#                 title = f"{samp} {title_formats[samp]}"
+#             else:
+#                 title = title_formats[i].format(samp)
+        
+#         if sample_type == 'normal':
+#             title += f', age = {age_mapper[samp]}'
+        
+#         ax.set_title(title, fontsize=text_fontsize * sf)
+#         ax.set_xlabel(xlabel, fontsize=text_fontsize * sf)
+#         if col == 0:
+#             ax.set_ylabel('Proportion', fontsize=text_fontsize * sf)
+#         else:
+#             ax.set_ylabel('')
+#         ax.tick_params(axis='both', labelsize=ticksfontsize * sf, width=sf, length=8 * sf)
+        
+#         if ylim is not None:
+#             ax.set_ylim(ylim)
+    
+#     if not outfile and not ncols == 1:
+#         fig.show()
+#     elif outfile_name is None:
+#         print('Provide a file name...')
+#     else:
+#         fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)    
+    
+#     if ncols == 1:
+#         return fig
+
+def plotTumorWise(beta_values, CpG_list=None, sample_list=None, n_samps=30, ncols=3, suptitle='random pick of samples',
+                  title_formats=None, xlabel='Beta', random_seed=None, outfile=False, outfile_name=None,
+                  outdir='images', choose_random=True, color='blue', ylim=None, bins='auto', figsize=None,
+                  text_fontsize=None, ticksfontsize=None, opacity=None, sf=1, tight_layout_pad=1, kde=False,
+                  suptitle_y=0.99, suptitle_fontsize=20):
+    """
+    Create a panel of tumor-level histograms of beta values
+    Can specify a list of CpGs to plot and/or a list of samples to plot
+    Can randomly pick samples to plot
+    
+    Parameters
+    ----------
+    beta_values : Pandas Dataframe
+        rows are CpGs, columns are samples
+    CpG_list : list or ndarray of strs
+        CpG sites to plot for each sample
+    sample_list : list or ndarray of strs
+        samples to plot
+    n_samps : int
+        number of samples to plot
+    ncols : int
+        number of columns
+    suptitle : str
+        super title of plot
+    title_formats : str
+        string with one "{}" instance to place sample names in
+        custom format of title of each hstogram
+    xlabel : str
+        x-axis title
+    random_seed : numerical
+        random_seed to use when randomly picking samples
+    outfile : boolean
+        True iff we want to save the figure to a file
+    outfile_name : str
+        name of outfile
+    outdir : str
+        path to output directory
+    choose_random : boolean
+        True iff we want to randomly pick samples
+    color : matplotlib color or list of matplotlib colors
+        color of histogram
+        if list, use colors in order for the first len(color) plots,
+        then use last color in list if it needs more
+    ylim : tuple of floats
+        y-axis limits that is used if not None
+    bins : str, number, vector, or a pair of such values
+        bins argument to sns.histplot
+    figsize : tuple of floats
+        figure size
+    text_fontsize=float
+        fontsize of x-label, y-label, and title
+    ticksfontsize : float
+        fontsize of x and y-ticks
+    opacity : float
+        opacity level to pass to alpha argument in sns.histplot
+    sf : float
+        scale factor
+        change to alter the size of a figure - scales everything proportionally
+    tight_layout_pad : float
+        tight_layout_pad argument to pass to fig.tight_layout
+    kde : boolean
+        True iff it should plot a kde curve
+    suptitle_y : float
+        y parameter in fig.suptitle
+        relative height of suptitle
+    suptitle_fontsize : float
+        fontsize of suptitle
+    """
+    
+    ########################
+    ##### Select data
+    ########################
+    
+    # Select samples from sample_list or columns of beta_values
     if sample_list is None:
-        sample_list = data[sample_type]['pureSamples']
+        sample_list = beta_values.columns.values
     
     n_samps = min(n_samps, len(sample_list))
     nrows = ceil(n_samps / ncols)
-    if CpG_list is None:
-        if data_obj == "beta_decomp":
-            CpG_list = data.index
-        else:
-            CpG_list = data[sample_type][data_obj].index
-        
     
+    # Use a list of CpG sites or all available in beta_values
+    if CpG_list is None:
+        CpG_list = beta_values.index.values
+    
+    # Choose a random set of samples
     if choose_random:
         np.random.seed(random_seed)
         samples_randSamp = np.random.choice(sample_list, n_samps, replace=False)
     else:
         samples_randSamp = sample_list[:n_samps]
     
+    ########################
+    ##### Create plot
+    ########################
+    
     if figsize is None:
-        fig, axes = plt.subplots(nrows, ncols, figsize=(20 * sf, (3 + 3*nrows) * sf))
+        fig, axes_arr = plt.subplots(nrows, ncols, figsize=(20, 3 + 3*nrows))
     else:
-        fig, axes = plt.subplots(nrows, ncols, figsize=np.array(figsize) * sf)
-    fig.suptitle(suptitle, y=0.99, fontsize=20, fontweight='bold')
+        fig, axes_arr = plt.subplots(nrows, ncols, figsize=np.array(figsize) * sf)
+    fig.suptitle(suptitle, y=suptitle_y, fontsize=suptitle_fontsize, fontweight='bold')
     fig.tight_layout(pad=tight_layout_pad)
     
+    # Iterate and plot all samples
     for i, samp in enumerate(samples_randSamp):
         col = i % ncols
         if nrows > 1:
             row = i // ncols
-            ax = axes[row, col]
+            ax = axes_arr[row, col]
         else:
-            if ncols == 1:
-                ax = axes
-            else:
-                ax = axes[col]
+            ax = axes_arr[col]
         
         if type(color) is list:
             cur_color = color[min(i, n_samps-1)]
         else:
             cur_color = color
-        
-        if data_obj == "beta_decomp":
-            plot_data = data.loc[CpG_list, samp]
-        else:
-            plot_data = data[sample_type][data_obj].loc[CpG_list, samp]
-        plot = sns.histplot(ax=ax, data=plot_data,
+
+        plot = sns.histplot(ax=ax, data=beta_values.loc[CpG_list, samp],
                             stat='proportion', binrange=(0, 1),
-                           color=cur_color, bins=bins, alpha=opacity)
-        if extra_titles is not None:
-            title = extra_titles[i]
+                           color=cur_color, bins=bins, alpha=opacity, kde=kde)
         
+        # Set title of local histogram
         if title_formats is None:
             title = samp
         else:
-            if data_obj == "beta_decomp":
-                title = f"{samp} {title_formats[samp]}"
-            else:
-                title = title_formats[i].format(samp)
+            title = title_formats[i].format(samp)
         
-        if sample_type == 'normal':
-            title += f', age = {age_mapper[samp]}'
-        
+        # Customize plot labels, axes, ticks, ticklabels
         ax.set_title(title, fontsize=text_fontsize * sf)
         ax.set_xlabel(xlabel, fontsize=text_fontsize * sf)
         if col == 0:
@@ -482,13 +630,9 @@ def plotTumorWise(data, CpG_list=None, sample_type='tumor', sample_list=None, n_
         if ylim is not None:
             ax.set_ylim(ylim)
     
-    if not outfile and not ncols == 1:
+    if not outfile:
         fig.show()
     elif outfile_name is None:
         print('Provide a file name...')
-    else:
+    else:      # Save plot
         fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)    
-    
-    if ncols == 1:
-        return fig
-
