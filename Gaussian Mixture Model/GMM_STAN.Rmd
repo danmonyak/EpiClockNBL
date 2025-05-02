@@ -7,9 +7,9 @@ output:
   html_document: default
   word_document: default
 params:
-  cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/TARGET/"
-  beta_vals_file: NBL.methyl.antiNonIterClustNotStuck_sites.tsv
-  output_file: "TARGET_tumor_params_GMM_summary.csv"
+  cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/Heinrich/"
+  beta_vals_file: Henrich.methyl.TARGET_Clock_sites.tsv
+  output_file: "Heinrich_tumor_params_GMM_summary.csv"
 ---
 
 ```{r setup, include=FALSE}
