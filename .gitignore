@@ -6,8 +6,10 @@ TARGET_GMM_STAN_files/
 
 consts.json
 __pycache__
-.DS_Store
+*/.DS_Store
+*/*/.DS_Store
 .Rhistory
 .ipynb_checkpoints
 Select_fCpGs/.DS_Store
 Analysis/.DS_Store
+.DS_Store
