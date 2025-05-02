@@ -10,3 +10,5 @@ __pycache__
 .Rhistory
 .ipynb_checkpoints
 Select_fCpGs/.DS_Store
+/Gaussian Mixture Model/GMM_STAN_files
+Gaussian Mixture Model/TARGET_GMM_STAN.pdf
