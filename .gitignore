@@ -1,8 +1,8 @@
-# Ignore entire TARGET_GMM_STAN_cache folder
-TARGET_GMM_STAN_cache/
+# Ignore entire GMM_STAN_cache folder
+GMM_STAN_cache/
 
-# Ignore entire TARGET_GMM_STAN_files folder
-TARGET_GMM_STAN_files/
+# Ignore entire GMM_STAN_files folder
+MM_STAN_files/
 
 consts.json
 __pycache__
@@ -12,6 +12,7 @@ __pycache__
 .ipynb_checkpoints
 */.ipynb_checkpoints
 Select_fCpGs/.DS_Store
+
 Analysis/.DS_Store
 .DS_Store
 *.pdf
@@ -21,3 +22,7 @@ TCGA Retrieval/MANIFEST.txt
 Select_fCpGs/.DS_Store
 Select_fCpGs/.DS_Store
 TCGA Retrieval/TCGA Retrieval.Rproj
+
+Gaussian Mixture Model/GMM_STAN_files
+Gaussian Mixture Model/TARGET_GMM_STAN.pdf
+

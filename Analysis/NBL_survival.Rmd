@@ -1,0 +1,140 @@
+---
+title: "Survival Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(survival)
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(survminer)
+
+official_indir <- '/Users/grahamgumbert/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets'
+proj_dir <- file.path(official_indir, 'TARGET')
+
+clinical <- read.table(file.path(proj_dir, 'clinical.annotated.survival.tsv'), sep='\t', header=T)
+```
+
+# Kaplan-meier curves
+
+```{r kaplan-meier, message = F}
+# Restrict columns
+survival_data <- data.frame(
+  Patient=clinical$submitter_id,
+  event=as.numeric(clinical$vital_status == 'Dead'),
+  time=clinical$days_to_follow_up / 365,
+  c_beta=clinical$c_beta,
+  inss_stage=clinical$inss_stage,
+  cog_neuroblastoma_risk_group=clinical$cog_neuroblastoma_risk_group,
+  mitosis_karyorrhexis_index=clinical$mitosis_karyorrhexis_index,
+  inpc_grade=clinical$inpc_grade,
+  gender=clinical$gender
+  )
+any(is.na(survival_data))
+# survival_data <- survival_data[complete.cases(survival_data), ]
+
+sprintf('%d samples available', nrow(survival_data))
+
+# KM curves
+
+##############################################################
+#################### stratify by c_beta ######################
+##############################################################
+
+# Quartiles
+survival_data <- survival_data %>%
+    mutate(quartile = ntile(c_beta, 4)) %>%
+    mutate(dichom = ntile(c_beta, 2),
+    dichom = factor(dichom, levels = c(1, 2), labels = c("Young", "Old"))) %>% 
+  mutate(tert=ntile(c_beta,3))
+
+
+fit<-survfit(Surv(time, event) ~ dichom, data=survival_data)
+
+# Compute p-value
+logrank <- survdiff(Surv(time, event) ~ dichom, data = survival_data)
+p_val <- 1 - pchisq(logrank$chisq, df = length(logrank$n) - 1)
+p_label <- paste0("p = ", signif(p_val, 3))
+
+# Plot with customizations and p-value
+km_plot <- autoplot(fit) +
+  ylim(0, 1) +
+  labs(
+    x = "Time (Years)",
+    y = "Survival",
+    color = "Strata",
+    fill = "Strata"
+  ) +
+  annotate("text", x = 2.2, y = 0.2, label = p_label, size = 3.5)
+
+ggsave("km_plot.png", km_plot, width = 7, height = 5, dpi = 800)
+
+fit<-survfit(Surv(time, event) ~ dichom, data=survival_data, subset = inss_stage == "Stage 4")
+
+# Compute p-value
+logrank <- survdiff(Surv(time, event) ~ dichom, data=survival_data, subset = inss_stage == "Stage 4")
+p_val <- 1 - pchisq(logrank$chisq, df = length(logrank$n) - 1)
+p_label <- paste0("p = ", signif(p_val, 3))
+
+# Plot with customizations and p-value
+km_plot_4 <- autoplot(fit) +
+  ylim(0, 1) +
+  labs(
+    x = "Time (Years)",
+    y = "Survival",
+    color = "Strata",
+    fill = "Strata"
+  ) +
+  annotate("text", x = 2.2, y = 0.2, label = p_label, size = 3.5)
+
+ggsave("km_plot_4.png", km_plot_4, width = 7, height = 5, dpi = 800)
+
+# survival_data$Stratum <- c('c_beta 1st Quartile',
+#                            'c_beta 2nd Quartile',
+#                            'c_beta 3rd Quartile',
+#                            'c_beta 4th Quartile')[survival_data$quartile]
+# autoplot(survfit(Surv(time, event) ~ Stratum, data=survival_data))
+
+##############################################################
+############ Stratify by other clinical variables ############
+##############################################################
+
+
+
+# autoplot(survfit(Surv(time, event) ~ inss_stage, data=survival_data))
+# 
+# table(survival_data$cog_neuroblastoma_risk_group)
+# autoplot(survfit(Surv(time, event) ~ cog_neuroblastoma_risk_group, data=survival_data))
+# 
+# autoplot(survfit(Surv(time, event) ~ mitosis_karyorrhexis_index, data=survival_data))
+# 
+# autoplot(survfit(Surv(time, event) ~ inpc_grade, data=survival_data))
+# 
+# autoplot(survfit(Surv(time, event) ~ gender, data=survival_data))
+```
+
+# Cox-models
+
+```{r cox-models, message = F}
+mod<-coxph(Surv(time, event) ~ c_beta, data = survival_data, subset = inss_stage == "Stage 4")
+
+mod<-coxph(Surv(time, event) ~ c_beta, data = survival_data)
+
+summary(mod)
+schoenfeld_test <- cox.zph(mod)
+
+# Display results
+print(schoenfeld_test)
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test)
+
+summary(coxph(Surv(time, event) ~ c_beta + cog_neuroblastoma_risk_group, data = survival_data))
+```
+
+
