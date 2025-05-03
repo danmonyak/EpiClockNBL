@@ -15,3 +15,8 @@ Select_fCpGs/.DS_Store
 Analysis/.DS_Store
 .DS_Store
 *.pdf
+.Rproj.user
+/Analysis/.ipynb_checkpoints
+TCGA Retrieval/MANIFEST.txt
+Select_fCpGs/.DS_Store
+Select_fCpGs/.DS_Store
