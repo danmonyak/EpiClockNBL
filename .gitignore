@@ -9,16 +9,12 @@ __pycache__
 .DS_Store
 .Rhistory
 .ipynb_checkpoints
+*.Rproj
+*.Rproj.user
+Rproj.user
 
-Analysis/.DS_Store
-.DS_Store
 *.pdf
-.Rproj.user
-/Analysis/.ipynb_checkpoints
 TCGA Retrieval/MANIFEST.txt
-Select_fCpGs/.DS_Store
-Select_fCpGs/.DS_Store
-TCGA Retrieval/TCGA Retrieval.Rproj
 
 Gaussian Mixture Model/GMM_STAN_files
 Gaussian Mixture Model/TARGET_GMM_STAN.pdf
