@@ -6,12 +6,9 @@ MM_STAN_files/
 
 consts.json
 __pycache__
-*/.DS_Store
-*/*/.DS_Store
+.DS_Store
 .Rhistory
 .ipynb_checkpoints
-*/.ipynb_checkpoints
-Select_fCpGs/.DS_Store
 
 Analysis/.DS_Store
 .DS_Store
