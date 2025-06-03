@@ -1,5 +1,5 @@
 ---
-title: "Obtain TCGA Dataset"
+title: "Obtain TARGET Dataset"
 date: "`r Sys.Date()`"
 output: html_document
 params:
@@ -245,6 +245,45 @@ if (params$save_data_as_rds) saveRDS(methyl,
                                                    ".rds"))
 dim(methyl)
 rm(methyl, data.methyl, query_methyl)
+```
+
+
+##### Retrieve supplementary clinical data
+
+```{r get_ihc_data, eval = params$save_data}
+query_clinical_general <- GDCquery(
+    project = params$project,
+    data.category = "Clinical",
+    data.type = "Clinical Supplement",
+    data.format = "BCR XML",
+    # barcode = query_clinical$submitter_id[query_clinical$in_analysis_dataset]
+)
+
+# Download the IHC
+GDCdownload(query_clinical_general, directory = paste0(params$save_path, params$GDCdata_dir))
+# Import follow up data
+clinical_mycnAmp <- GDCprepare_clinic(query_clinical_general, clinical.info = "patient",
+                                      directory = paste0(params$save_path, params$GDCdata_dir))
+# clinical_ihc <- clinical_ihc[,
+#                   c('bcr_patient_barcode',
+#                     'breast_carcinoma_estrogen_receptor_status',
+#                     'breast_carcinoma_progesterone_receptor_status',
+#                     'lab_proc_her2_neu_immunohistochemistry_receptor_status')
+#              ]
+# query_clinical <- merge(query_clinical, clinical_ihc,
+#                                 by.x='submitter_id', by.y='bcr_patient_barcode',
+#                                 all.x=T)
+# 
+# 
+# query_clinical$breast_carcinoma_estrogen_receptor_status <-
+#   as.character(query_clinical$breast_carcinoma_estrogen_receptor_status)
+# query_clinical$breast_carcinoma_progesterone_receptor_status <-
+#   as.character(query_clinical$breast_carcinoma_progesterone_receptor_status)
+# query_clinical$lab_proc_her2_neu_immunohistochemistry_receptor_status <-
+#   as.character(query_clinical$lab_proc_her2_neu_immunohistochemistry_receptor_status)
+# 
+# # Drop problematic column
+# query_clinical <- query_clinical[, names(query_clinical) != 'sites_of_involvement']
 ```
 
 ##### Clinical data
