@@ -5,12 +5,11 @@ date: "`r Sys.Date()`"
 output: html_document
 params:
   cancer_type: "NBL"
-  cls_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma_c_beta.cls"
-  pos_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/NBL_cluster_gmm_phi.Gsea.1741669700509/gsea_report_for_neuroblastoma_gmm_phi_pos_1741669700509.tsv"
-  neg_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/NBL_cluster_gmm_phi.Gsea.1741669700509/gsea_report_for_neuroblastoma_gmm_phi_neg_1741669700509.tsv"
+  cls_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/neuroblastoma_gmm_phi.cls"
+  pos_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/NBL_TARGET.Gsea.1746211509655/gsea_report_for_neuroblastoma_gmm_phi_pos_1746211509655.tsv"
+  neg_file: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET//NBL_TARGET.Gsea.1746211509655/gsea_report_for_neuroblastoma_gmm_phi_neg_1746211509655.tsv"
   names:
-    - "$C_{\\beta}$"
-    - "$C_{\\beta}^{\\alpha}$"
+    - "${\\phi}$"
   fdr_limit: 0.1
 ---
 
@@ -146,7 +145,8 @@ plot_data <- function(data, name) {
           axis.line = element_line(colour = "black")))  + 
     coord_cartesian(clip="off")
   
-  ggsave("~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/gsea_plot.png", plot = gg)
+  ggsave("~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/gsea_plot.png", plot = gg,
+         width=7, height=4)
   gg
 }
 ```
