@@ -1,15 +1,18 @@
 ---
-title: "GMM_STAN"
+title: "Gaussian mixture model for tumor age inference"
 author: "Graham Gumbert"
-date: "2024-12-20"
+date: "`r Sys.Date()`"
 output:
-  pdf_document: default
+  # pdf_document: default
   html_document: default
-  word_document: default
 params:
-  cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/Heinrich/"
-  beta_vals_file: Henrich.methyl.TARGET_Clock_sites.tsv
-  output_file: "Heinrich_tumor_params_GMM_summary.csv"
+  # dataset: "Henrich"
+  # beta_vals_filename: "Henrich.methyl.TARGET_Clock_sites.tsv"
+  dataset: "TARGET"
+  beta_vals_filename: "NBL.methyl.antiNonIterClustNotStuck_sites.tsv"
+  # beta_vals_file_suffix: "methyl.TARGET_Clock_sites.tsv"
+  cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets"
+  output_file_suffix: "GMM_results.csv"
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +21,7 @@ library(rstan)
 library(dplyr)
 library(ggplot2)
 library(bayesplot)
+library(reshape2)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -25,8 +29,10 @@ options(mc.cores = parallel::detectCores())
 
 ## Read in data
 
-```{r}
-data <- read.table(paste0(params$cloud_path, params$beta_vals_file), 
+```{r import-data}
+# beta_vals_filename <- paste(params$dataset, params$beta_vals_file_suffix, sep='.')
+data <- read.table(file.path(params$cloud_path, params$dataset,
+                             params$beta_vals_filename), 
                    header = TRUE, sep = "\t")
 
 site_ids <- data[[1]]
@@ -39,21 +45,22 @@ cat("Number of sites:", num_sites, "\n")
 cat("Number of tumors:", num_tumors, "\n")
 ```
 
-## Initialize Stan model
+## Compile Stan model
 
-```{r}
+```{r compile-model}
 sm <- stan_model("gmm.stan")
 ```
 
 ## Fit Stan model on beta-val distributions and save results in results_list
 
-```{r cache=TRUE, echo = FALSE, results = 'hide'}
+```{r fit-models, cache=F, echo = T, results = 'hide'}
 # We'll loop through each column and fit the model
-
-results_list <- list()
+all.results <- NULL # Collect the summary results in a dataframe
+                    #     after each tumor is fit
 
 for (j in 1:ncol(tumor_data)) {
   tumor_id <- colnames(tumor_data)[j]
+  
   y <- tumor_data[[tumor_id]]
   y <- y[!is.na(y)]
   y <- y[is.finite(y)]
@@ -66,138 +73,47 @@ for (j in 1:ncol(tumor_data)) {
 
   # Fit the model
   fit <- sampling(
-  object  = sm,
-  data    = list(N_data = N_obs, y = y),
-  chains  = 4,
-  iter    = 4000,
-  warmup  = 2000,
-  seed    = 42,
-  control = list(adapt_delta = 0.99, max_treedepth = 15)
-)
+    object  = sm,
+    data    = list(N_data = N_obs, y = y),
+    chains  = 4,
+    iter    = 4000,
+    warmup  = 2000,
+    seed    = 42,
+    control = list(adapt_delta = 0.99, max_treedepth = 15)
+  )
 
-
-  # Store the fit object
-  results_list[[tumor_id]] <- fit
-}
-
-```
-
-## Initialize tumor_params dataframe and fill it out with the Stan model outputs from results_list.
-
-\_lower is 2.5% and \_upper is 97.5% which give us our 95% confidence interval for the peak location
-
-```{r}
-tumor_params <- data.frame(
-  Tumor  = names(results_list),
-  
-  psi_1_mean   = NA,
-  psi_1_lower  = NA,
-  psi_1_upper  = NA,
-  psi_2_mean   = NA,
-  psi_2_lower  = NA,
-  psi_2_upper  = NA,
-  psi_3_mean   = NA,
-  psi_3_lower  = NA,
-  psi_3_upper  = NA,
-  
-  X_mean       = NA,
-  X_lower      = NA,
-  X_upper      = NA,
-  
-  N_mean       = NA,
-  N_lower      = NA,
-  N_upper      = NA,
-  
-  phi_mean     = NA,
-  phi_lower    = NA,
-  phi_upper    = NA,
-  
-  stringsAsFactors = FALSE
-)
-
-for (i in seq_along(results_list)) {
-  tumor_id         = names(results_list)[i]
-  fit              = results_list[[i]]
-  
   if (is.null(fit)) {
+    print('########################################')
+    print('########################################')
+    print(sprintf('######## %s failed ###############', tumor_id))
+    print('########################################')
+    print('########################################')
     next
   }
   
-  posterior_samples <- rstan::extract(fit)
+  # Extracting summary results
+  summary.stats <- as.data.frame(summary(fit)$summary)
   
-  ci <- function(x) {
-    c(
-      lower = quantile(x, probs = 0.025, na.rm = TRUE),
-      upper = quantile(x, probs = 0.975, na.rm = TRUE)
-    )
-  }
+  summary.stats$param <- rownames(summary.stats)
+  summary.stats.longForm <- melt(summary.stats, id='param')
+  rownames(summary.stats.longForm) <- paste(summary.stats.longForm$param, summary.stats.longForm$variable, sep='.')
+  summary.stats.longForm <- summary.stats.longForm['value']
+  names(summary.stats.longForm) <- tumor_id
   
-  psi_1_vals        <- posterior_samples$psi[, 1]
-  psi_2_vals        <- posterior_samples$psi[, 2]
-  psi_3_vals        <- posterior_samples$psi[, 3]
-  
-  psi_1_ci          <- ci(psi_1_vals)
-  psi_2_ci          <- ci(psi_2_vals)
-  psi_3_ci          <- ci(psi_3_vals)
-  
-  X_vals            <- posterior_samples$X
-  X_ci              <- ci(X_vals)
-  
-  N_vals            <- posterior_samples$N
-  N_ci              <- ci(N_vals)
-  
-  phi_vals          <- posterior_samples$phi
-  phi_ci            <- ci(phi_vals)
-  
-  tumor_params[i, "psi_1_mean"]  <- mean(psi_1_vals, na.rm = TRUE)
-  tumor_params[i, "psi_1_lower"] <- psi_1_ci["lower.2.5%"]
-  tumor_params[i, "psi_1_upper"] <- psi_1_ci["upper.97.5%"]
-  
-  tumor_params[i, "psi_2_mean"]  <- mean(psi_2_vals, na.rm = TRUE)
-  tumor_params[i, "psi_2_lower"] <- psi_2_ci["lower.2.5%"]
-  tumor_params[i, "psi_2_upper"] <- psi_2_ci["upper.97.5%"]
-  
-  tumor_params[i, "psi_3_mean"]  <- mean(psi_3_vals, na.rm = TRUE)
-  tumor_params[i, "psi_3_lower"] <- psi_3_ci["lower.2.5%"]
-  tumor_params[i, "psi_3_upper"] <- psi_3_ci["upper.97.5%"]
-  
-  tumor_params[i, "X_mean"]      <- mean(X_vals, na.rm = TRUE)
-  tumor_params[i, "X_lower"]     <- X_ci["lower.2.5%"]
-  tumor_params[i, "X_upper"]     <- X_ci["upper.97.5%"]
-  
-  tumor_params[i, "N_mean"]      <- mean(N_vals, na.rm = TRUE)
-  tumor_params[i, "N_lower"]     <- N_ci["lower.2.5%"]
-  tumor_params[i, "N_upper"]     <- N_ci["upper.97.5%"]
-  
-  tumor_params[i, "phi_mean"]    <- mean(phi_vals, na.rm = TRUE)
-  tumor_params[i, "phi_lower"]   <- phi_ci["lower.2.5%"]
-  tumor_params[i, "phi_upper"]   <- phi_ci["upper.97.5%"]
-}
+  all.results <- rbind(all.results, t(summary.stats.longForm))
 
-tumor_params
-
-write.csv(tumor_params, params$output_file, row.names = FALSE)
-
-```
-
-## Plots tumor beta value distributions with GMM output plotted with it.
-
-Also plots the chain mixing and pairwise correlations of the GMM Stan model outputs.
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-
-# Loop over each tumor
-for (i in 1:nrow(tumor_params)) {
-  tumor_id   <- tumor_params$Tumor[i]
-  psi_1_mean <- tumor_params$psi_1_mean[i]
-  psi_2_mean <- tumor_params$psi_2_mean[i]
-  psi_3_mean <- tumor_params$psi_3_mean[i]
-  X_mean     <- tumor_params$X_mean[i]
-  N_mean     <- tumor_params$N_mean[i]
-  phi_mean   <- tumor_params$phi_mean[i]
+  #############################################
+  #############################################
+  ############## Create figures ###############
+  #############################################
+  #############################################
   
-  # Retrieve the Stan fit object
-  fit <- results_list[[tumor_id]]
+  psi_1_mean <- summary.stats['psi[1]', 'mean']
+  psi_2_mean <- summary.stats['psi[2]', 'mean']
+  psi_3_mean <- summary.stats['psi[3]', 'mean']
+  X_mean     <- summary.stats['X', 'mean']
+  N_mean     <- summary.stats['N', 'mean']
+  phi_mean   <- summary.stats['phi', 'mean']
   
   
   if (is.na(psi_1_mean)) {
@@ -296,5 +212,6 @@ for (i in 1:nrow(tumor_params)) {
   cat("\n\n")
 }
 
-
+output_filename <- paste(params$dataset, params$output_file_suffix, sep='.')
+write.csv(all.results, output_filename, row.names = T)
 ```
