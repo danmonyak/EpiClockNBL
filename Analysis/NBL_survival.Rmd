@@ -76,7 +76,7 @@ p_label <- paste0("P = ", signif(p_val, 2))
 km_plot <- autoplot(fit) +
   ylim(0, 1) +
   labs(
-    x = "Time (years)",
+    x = "Time since diagnosis (years)",
     y = "Survival",
     title = sprintf('All tumors (N = %d)', sum(logrank$n))
   ) +
@@ -90,15 +90,15 @@ km_plot <- autoplot(fit) +
         legend.justification = c(0, 0)
         ) +
   scale_color_discrete(labels = c(
-    sprintf('Young (n = %d)', logrank$n[['dichom=Young']]),
-    sprintf('Old (n = %d)', logrank$n[['dichom=Old']])
+    sprintf('Young tumors (n = %d)', logrank$n[['dichom=Young']]),
+    sprintf('Old tumors (n = %d)', logrank$n[['dichom=Old']])
   )) +
   scale_fill_discrete(labels = c(
-    sprintf('Young (n = %d)', logrank$n[['dichom=Young']]),
-    sprintf('Old (n = %d)', logrank$n[['dichom=Old']])
+    sprintf('Young tumors (n = %d)', logrank$n[['dichom=Young']]),
+    sprintf('Old tumors (n = %d)', logrank$n[['dichom=Old']])
   ))
 
-ggsave(file.path('figures', "km_plot.png"), km_plot, width = sf * 6, height = sf * 5, dpi = 800)
+ggsave(file.path('figures', "km_plot.svg"), km_plot, width = sf * 6, height = sf * 5, dpi = 800, device='svg')
 
 km_plot
 ```
@@ -128,7 +128,7 @@ p_label <- paste0("P = ", signif(p_val, 2))
 km_plot_4 <- autoplot(fit) +
   ylim(0, 1) +
   labs(
-    x = "Time (Years)",
+    x = "Time since diagnosis (years)",
     y = "Survival",
     title = sprintf('Stage 4 tumors (N = %d)', sum(logrank$n))
   ) +
@@ -142,15 +142,15 @@ km_plot_4 <- autoplot(fit) +
         legend.justification = c(0, 0)
         ) +
   scale_color_discrete(labels = c(
-    sprintf('Young (n = %d)', logrank$n[['dichom=Young']]),
-    sprintf('Old (n = %d)', logrank$n[['dichom=Old']])
+    sprintf('Young tumors (n = %d)', logrank$n[['dichom=Young']]),
+    sprintf('Old tumors (n = %d)', logrank$n[['dichom=Old']])
   )) +
   scale_fill_discrete(labels = c(
-    sprintf('Young (n = %d)', logrank$n[['dichom=Young']]),
-    sprintf('Old (n = %d)', logrank$n[['dichom=Old']])
+    sprintf('Young tumors (n = %d)', logrank$n[['dichom=Young']]),
+    sprintf('Old tumors (n = %d)', logrank$n[['dichom=Old']])
   ))
 
-ggsave(file.path('figures', "km_plot_4.png"), km_plot_4, width = sf * 6, height = sf * 5, dpi = 800)
+ggsave(file.path('figures', "km_plot_4.svg"), km_plot_4, width = sf * 6, height = sf * 5, dpi = 800, device='svg')
 
 km_plot_4
 ```
@@ -186,37 +186,83 @@ km_plot_4
 
 ```{r cox-models, message = F}
 coxResultsTable <- function(mod) {
-  coef_table <- as.data.frame(summary(mod)$coefficients) # Get coefficients
-  colnames(coef_table) <- c("Coef", "Exp(Coef)", "SE(Coef)", "z", "p") # Reformat
+  modsum <- summary(mod)
+  coefs <- as.data.frame(modsum$coefficients) # Get coefficients
+  conf.int <- as.data.frame(modsum$conf.int)
+  # colnames(coef_table) <- c("Coef", "Exp(Coef)", "SE(Coef)", "z", "p")
+  coef_table <- cbind(coefs, conf.int)
+  names(coef_table)[which(names(coef_table) == 'Pr(>|z|)')] = 'p'
+  # Reformat
   format(coef_table, digits=2)
 }
 
-# Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
-  kable_styling(full_width = FALSE, position = "left")
-
-# }
 
 # mod <- coxph(Surv(time, event) ~ mitotic.age, data = survival_data, subset = inss_stage == "Stage 4")
 
 mod.allTumors <- coxph(Surv(time, event) ~ mitotic.age,
                                    data = survival_data)
-mod <- mod.allTumors
-# mitotic.age.mod <- 
 
-schoenfeld_test <- cox.zph(mod)
-print(schoenfeld_test)
+
+coef_table.allTumors <- coxResultsTable(mod.allTumors)
+
+# Display as a kable table
+kable(coef_table.allTumors, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
+schoenfeld_test.allTumors <- cox.zph(mod.allTumors)
+print(schoenfeld_test.allTumors)
 # Display results
 
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test.allTumors)
+```
+
+## Predict only with tumor mitotic age for STAGE 4 tumors
+
+```{r cox-models-stage4, message = F}
+
+mod.stage4 <- coxph(Surv(time, event) ~ mitotic.age,
+                       data = survival_data,
+                       subset = inss_stage == "Stage 4")
+
+
+coef_table.stage4 <- coxResultsTable(mod.stage4)
+
+# Display as a kable table
+kable(coef_table.stage4, caption = "Cox Proportional Hazards Model Summary, stage 4 tumors") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
+schoenfeld_test.stage4 <- cox.zph(mod.stage4)
+print(schoenfeld_test.stage4)
+# Display results
 
 # Plot residuals for proportional hazards check
-plot(schoenfeld_test)
+plot(schoenfeld_test.stage4)
 ```
 
 ## Predict with tumor mitotic age and COG risk group
 
 ```{r check-confounding}
-print(summary(coxph(Surv(time, event) ~ mitotic.age + cog_neuroblastoma_risk_group, data = survival_data)))
+mod.mitotic.age.COG <- coxph(Surv(time, event) ~ mitotic.age + cog_neuroblastoma_risk_group, data = survival_data)
+
+# print(summary())
+
+
+coef_table.mitotic.age.COG <- coxResultsTable(mod.mitotic.age.COG)
+
+# Display as a kable table
+kable(coef_table.mitotic.age.COG, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
+schoenfeld_test.mitotic.age.COG <- cox.zph(mod.mitotic.age.COG)
+print(schoenfeld_test.mitotic.age.COG)
+# Display results
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test.mitotic.age.COG)
 ```
 
 
