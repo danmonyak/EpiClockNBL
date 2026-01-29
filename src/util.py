@@ -48,7 +48,7 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
                 outdir='.', outfile=True, title=False, custom_title=None, xlabel=None, ylabel=None, palette=None,
                 plot_ymax_mult=0.25, signif_bar_heights=0.03,
                    signif_fontsize=14, ylim=None,
-                   figsize=(10, 10), labelfontsize=20, ticksfontsize=10, linewidth=1, fliersize=1, sf=1):
+                   figsize=(10, 10), labelfontsize=20, ticksfontsize=10, linewidth=1, fliersize=1, sf=1, file_format='pdf'):
     """
     Create box plot from a sample annotations DataFrame
     Plot some numerical variable and stratfy by some categorical variable
@@ -106,6 +106,8 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
     sf : float
         scale factor
         change to alter the size of a figure - scales everything proportionally
+    file_format : str
+        'pdf', 'png', 'svg', etc.
     
     Returns
     -------
@@ -130,9 +132,9 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
     if restrict:
         use_samples_mask &= sample_annotations['in_analysis_dataset']
         if outfile:
-            outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}-restrict.pdf'
+            outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}-restrict.{file_format}'
     elif outfile:
-        outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}.pdf'
+        outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}.{file_format}'
 
     # Exclude samples with missing data
     use_samples_mask &= ~sample_annotations[var_y].isna()
@@ -252,7 +254,7 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
     
     # Save plot
     if outfile:
-        fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)
+        fig.savefig(os.path.join(outdir, outfile_name), format=file_format, pad_inches=0.1)
 
     return ax
 
