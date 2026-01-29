@@ -28,3 +28,5 @@ Analysis/Analysis.Rproj
 
 figures
 .Rproj.user
+*.Rhistory
+Analysis/.Rhistory
