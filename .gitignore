@@ -27,3 +27,6 @@ Analysis/.ipynb_checkpoints/Analysis-checkpoint.ipynb
 Analysis/Analysis.Rproj
 
 figures
+.gitattributes
+TCGA Retrieval/results.rds
+Analysis/splits
