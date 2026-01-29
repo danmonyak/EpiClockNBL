@@ -69,7 +69,7 @@ Of the `r length(participant_subset)` participants of interest, `r length(unique
 
 #### Participants With More Than One Tumor In Set of Interest
 
-```{r multiple_tumor_per_participant, echo = FALSE}
+```{r multiple_tumor_per_participant}
 # methyl_tumor_ids <- methyl_tumor_ids[1:10]
 # methyl_tumor_ids <- c("TARGET-30-PAIFXV-01A", "TARGET-30-PAISNS-01A",
 #                       "TARGET-30-PAITCI-01A", "TARGET-30-PAIVHE-01A",
@@ -81,6 +81,10 @@ duplicated.participants <- duplicated(getParticipantIDs(common_tumors)) |
   duplicated(getParticipantIDs(common_tumors), fromLast = TRUE)
 duplicated.tumors <- duplicated(common_tumors) | duplicated(common_tumors, fromLast = TRUE)
 dups <- duplicated.participants & !duplicated.tumors
+
+
+# DELETE
+# common_tumors <- common_tumors[1:10]
 ```
 `r if(any(dups)) {paste("Participants with multiple tumors: ", paste(unique(getParticipantIDs(common_tumors)[dups]), collapse = ", "), ".")}`
 
