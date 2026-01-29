@@ -290,3 +290,37 @@ def clusteringWeights(km_beta_values, random_state=None):
             w += centroid_diff * k_frac.loc[(i, j)]
     
     return w
+
+def getBinEdges(start, stop, binwidth, hardStop=True):
+    """
+    Generate a list of bin edges given a start, stop, and bin width.
+
+    Parameters:
+    -----------
+    start : float
+        The starting edge of the binning range.
+    stop : float
+        The stopping edge of the binning range.
+    binwidth : float
+        The width of each bin.
+    hardStop : bool, default=True
+        If True, ensures that the last bin edge is exactly `stop` and works backwards to `start`.
+        If False, starts from `start` and increments bin edges by `binwidth` until it passes `stop`.
+
+    Returns:
+    --------
+    list of float
+        A list of bin edges starting from `start` (or ending at `stop`, depending on `hardStop`).
+    """
+    if hardStop:
+        bin_edges = [stop]
+        # Work backwards from `stop` to `start`, subtracting `binwidth` each time
+        while bin_edges[-1] > start:
+            bin_edges.append(bin_edges[-1] - binwidth)
+        return bin_edges[::-1]  # Return in ascending order
+    else:
+        bin_edges = [start]
+        # Work forwards from `start` to `stop`, adding `binwidth` each time
+        while bin_edges[-1] < stop:
+            bin_edges.append(bin_edges[-1] + binwidth)
+        return bin_edges
