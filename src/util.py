@@ -8,23 +8,58 @@ import seaborn as sns
 from scipy.stats import linregress, ranksums
 import json
 
+
+############################################################
+"""
+Find the absolute path to the repository directory (repo_dir) whenever this module is imported
+repo_dir is needed to read src/consts.json
+"""
+################################################
+exception_msg = '-'*120
+exception_msg += '\nutil.py module can only imported inside of the EpiClockInvasiveBRCA directory (or a subdirectory)'
+exception_msg += '\nIf running a .py script, navigate to the subdirectory and run "python <script.py>"'
+exception_msg += '\nIf running a .ipynb jupyter notebook, ensure that the jupyter server was started inside the EpiClockInvasiveBRCA directory.'
+exception_msg += '\n' + '-'*139
+
 subdir_list = os.getcwd().split(os.sep)
 while True:
-    if subdir_list[-1] == 'EpiClockNBL':
-        break
+    try:
+        if subdir_list[-1] == 'EpiClockNBL':
+            break
+    except IndexError:
+        raise Exception(exception_msg) from None
     
     subdir_list.pop()
         
 repo_dir = os.path.join(os.sep, *subdir_list)
-
+################################################
+# Load the variables in consts.json into a dictionary
 consts = json.loads(''.join(open(os.path.join(repo_dir, 'src', 'consts.json'), 'r').readlines()))
+consts['repo_dir'] = repo_dir
+try:
+    config = json.loads(''.join(open(os.path.join(repo_dir, 'config.json'), 'r').readlines()))
+except FileNotFoundError:
+    sys.exit('Please create config.json file in main directory of repository...')
+consts.update(config)
 
-sampleToPatientID = lambda x: '-'.join(x.split('-')[:3])
-getSampleID = lambda x: '-'.join(x.split('-')[:4])
+################################################################
+##########           Small helper functions           ##########
+################################################################
+
+def sampleToPatientID(x):
+    return '-'.join(x.split('-')[:3])
+def getSampleID(x):
+    return '-'.join(x.split('-')[:4])
+
+# Element-wise boolean test - is the element None or NaN
 isNaVec = np.vectorize(lambda x:(x is None) or ((type(x) is not str) and isnan(x)))
 
 def combineFilters(filters):
     return list(accumulate(filters, lambda x,y:x&y))[-1]
+
+################################################################
+##########        Statistical helper functions        ##########
+################################################################
 
 def pearsonCorrelation(ser1, ser2, get_n_used=False):
     use_mask = ~(ser1.isna() | ser2.isna())
