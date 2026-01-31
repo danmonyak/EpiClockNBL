@@ -18,7 +18,6 @@ while True:
 repo_dir = os.path.join(os.sep, *subdir_list)
 
 consts = json.loads(''.join(open(os.path.join(repo_dir, 'src', 'consts.json'), 'r').readlines()))
-# consts = json.loads(''.join(open(os.path.join('/Users/danielmonyak/Documents/Duke/lab/EpiClockInvasiveBRCA', 'src', 'consts.json'), 'r').readlines()))
 
 sampleToPatientID = lambda x: '-'.join(x.split('-')[:3])
 getSampleID = lambda x: '-'.join(x.split('-')[:4])
