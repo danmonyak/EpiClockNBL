@@ -1,8 +1,5 @@
 {
-    "official_indir": "/Users/danielmonyak/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets",
-    "repo_dir": "/Users/danielmonyak/Documents/Duke/lab/EpiClockNBL",
-    "repo_datadir": "/Users/danielmonyak/Documents/Duke/lab/EpiClockNBL/data",
-    "Figure_data_dir": "/PATH/TO/Figure Data",
+    "repo_datadir": "data",
     "LUMP_threshold":0.7,
     "palette_jco": [
         "#0073C2FF",
