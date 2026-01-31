@@ -16,8 +16,8 @@ import numpy as np
 import os
 import sys
 from sklearn.cluster import KMeans
-import EpiClockNBL.src.util as pc_util
-nbl_consts = pc_util.consts
+import EpiClockNBL.src.util as nbl_util
+nbl_consts = nbl_util.consts
 
 ## Defines acceptable ranges (inclusive) for each value
 CLOCK_CRITERIA = {
@@ -59,7 +59,7 @@ def getNeutralDNACpGs(chip_27k=False):
         neutral_filters.append(manifest_450K['Methyl27_Loci'])
     
     # Combine the filters to select neutral CpGs
-    neutral_DNA_CpG_list = manifest_450K.index[pc_util.combineFilters(neutral_filters)].values
+    neutral_DNA_CpG_list = manifest_450K.index[nbl_util.combineFilters(neutral_filters)].values
     
     # Sanity checks
     neutral_manifest_450K = manifest_450K.loc[neutral_DNA_CpG_list]
@@ -112,7 +112,7 @@ def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
     
     # All TCGA samples have already been filtered for purity
     if filter_tum_samps:
-        data['tumor']['purity'] = pc_util.getLUMP_values(data['tumor']['beta_values'])
+        data['tumor']['purity'] = nbl_util.getLUMP_values(data['tumor']['beta_values'])
         data['tumor']['pureSamples'] = data['tumor']['purity'].index[
             data['tumor']['purity'] >= nbl_consts['LUMP_threshold']
         ].values
@@ -123,7 +123,7 @@ def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
         
         # Get pure samples for normals
         # Filter by LUMP value
-        data['normal']['purity'] = pc_util.getLUMP_values(data['normal']['beta_values'])
+        data['normal']['purity'] = nbl_util.getLUMP_values(data['normal']['beta_values'])
         data['normal']['pureSamples'] = data['normal']['purity'].index[
             data['normal']['purity'] >= nbl_consts['LUMP_threshold']
         ].values
@@ -201,7 +201,7 @@ def getCpG_list(data, criteria, starting_CpG_list=None, n_select=None, sample_ra
             siteFilters.append(data[sample][stat] >= samp_criteria[stat][0])
             siteFilters.append(data[sample][stat] <= samp_criteria[stat][1])
             
-    combined_filter = pc_util.combineFilters(siteFilters)
+    combined_filter = nbl_util.combineFilters(siteFilters)
     criteria_CpGs = np.intersect1d(data['allCpGs'][combined_filter], starting_CpG_list)
     if n_select is None:
         if n_select_frac is None:
