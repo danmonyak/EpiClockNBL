@@ -17,7 +17,7 @@ import os
 import sys
 from sklearn.cluster import KMeans
 import EpiClockNBL.src.util as pc_util
-pc_consts = pc_util.consts
+nbl_consts = pc_util.consts
 
 ## Defines acceptable ranges (inclusive) for each value
 CLOCK_CRITERIA = {
@@ -43,7 +43,7 @@ def getNeutralDNACpGs(chip_27k=False):
     Checks the manifests of both the 450K and 850K array
     """
     
-    chip_annot_dir = os.path.join(pc_consts['BRCA_official_indir'], 'TCGA', 'chip_annots')
+    chip_annot_dir = os.path.join(nbl_consts['BRCA_official_indir'], 'TCGA', 'chip_annots')
     manifest_450K = pd.read_table(os.path.join(chip_annot_dir, 'chip450_annot_cleaned.txt'), index_col=0, low_memory=False)
     manifest_850K = pd.read_table(os.path.join(chip_annot_dir, 'chip850_annot_cleaned.txt'), index_col=0, low_memory=False)
     
@@ -114,7 +114,7 @@ def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
     if filter_tum_samps:
         data['tumor']['purity'] = pc_util.getLUMP_values(data['tumor']['beta_values'])
         data['tumor']['pureSamples'] = data['tumor']['purity'].index[
-            data['tumor']['purity'] >= pc_consts['LUMP_threshold']
+            data['tumor']['purity'] >= nbl_consts['LUMP_threshold']
         ].values
     else:
         data['tumor']['pureSamples'] = data['tumor']['beta_values'].columns.values
@@ -125,7 +125,7 @@ def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
         # Filter by LUMP value
         data['normal']['purity'] = pc_util.getLUMP_values(data['normal']['beta_values'])
         data['normal']['pureSamples'] = data['normal']['purity'].index[
-            data['normal']['purity'] >= pc_consts['LUMP_threshold']
+            data['normal']['purity'] >= nbl_consts['LUMP_threshold']
         ].values
         
         
