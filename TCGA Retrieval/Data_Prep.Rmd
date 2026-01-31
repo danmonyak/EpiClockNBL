@@ -81,10 +81,6 @@ duplicated.participants <- duplicated(getParticipantIDs(common_tumors)) |
   duplicated(getParticipantIDs(common_tumors), fromLast = TRUE)
 duplicated.tumors <- duplicated(common_tumors) | duplicated(common_tumors, fromLast = TRUE)
 dups <- duplicated.participants & !duplicated.tumors
-
-
-# DELETE
-# common_tumors <- common_tumors[1:10]
 ```
 `r if(any(dups)) {paste("Participants with multiple tumors: ", paste(unique(getParticipantIDs(common_tumors)[dups]), collapse = ", "), ".")}`
 
@@ -105,18 +101,6 @@ query_clinical$in_CpG_dataset <- query_clinical$submitter_id %in% getParticipant
 # ensure that something did not go wrong
 # code_given <- apply(query_clinical[, reasons], 1L, any)
 code_given <- query_clinical[, 'reason_methyl']
-
-################################################
-#################### delete ####################
-# There are some tumors that have methylation data but fail purity test or
-# pass purity test, but have no methylation data
-
-# query_clinical$reason_methyl_and_purity <- !query_clinical$in_CpG_dataset & !code_given
-# reasons <- c(reasons, "reason_methyl_and_purity")  
-# code_given <- apply(query_clinical[, reasons], 1L, any)
-
-# cat("The tumors with methylation data are\n")
-# print(methyl_tumor_ids[methyl_participant_ids %in% query_clinical$submitter_id[query_clinical$reason_methyl_and_purity]])
 
 ################################################
 ################################################
