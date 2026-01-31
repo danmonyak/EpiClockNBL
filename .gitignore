@@ -32,3 +32,4 @@ TCGA Retrieval/results.rds
 Analysis/splits
 refactoring-to-do.txt
 .Rproj.user
+config.json

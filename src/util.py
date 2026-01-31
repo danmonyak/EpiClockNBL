@@ -257,7 +257,7 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
     return ax
 
 
-lump_CpGs = np.loadtxt(os.path.join(consts['repo_datadir'], 'lump-CpGs-44.txt'), dtype=str)
+lump_CpGs = np.loadtxt(os.path.join(consts['repo_dir'], consts['repo_datadir'], 'lump-CpGs-44.txt'), dtype=str)
 def getLUMP_values(beta_values):
     included_lump = np.intersect1d(lump_CpGs, beta_values.index)
     if included_lump.shape[0] != lump_CpGs.shape[0]:

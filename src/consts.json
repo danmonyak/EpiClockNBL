@@ -1,8 +1,5 @@
 {
-    "official_indir": "/PATH/TO/Datasets",
-    "repo_dir": "/PATH/TO/EpiClockNBL",
-    "repo_datadir": "/PATH/TO/EpiClockNBL/data",
-    "Figure_data_dir": "/PATH/TO/Figure Data",
+    "repo_datadir": "data",
     "LUMP_threshold":0.7,
     "palette_jco": [
         "#0073C2FF",
