@@ -17,8 +17,63 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+
+getProcessedResponse <- function() {
+  response <- readline('Permission to remove current installation of TCGAbiolinks (necessary for data retrieval) ([y]/n): ')
+  response_processed <- stringr::str_to_lower(substr(response, 1, 1))
+  response_processed
+}
+```
+
+```{r install-packages}
+TCGAbiolinks_version <- read.table('TCGAbiolinks_version.txt')$V1
+
+
 # This package streamlines the data pull from GDC
-library(TCGAbiolinks)
+if (!require('remotes', quietly=TRUE)) {
+  install.packages('remotes')
+}
+if (!require('stringr', quietly=TRUE)) {
+  install.packages('stringr')
+}
+
+if (require('TCGAbiolinks', quietly=TRUE)) {
+  if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
+    print('Wrong version of TCGAbiolinks installed, need forked version...')
+    
+        
+    response_processed <- getProcessedResponse()
+    if (!(response_processed == '' || response_processed == 'y')) {
+      print('Permission not granted to remove current installation of TCGAbiolinks, quitting...')
+      knitr::knit_exit()
+    }
+    
+
+    print('Removing current installation of TCGAbiolinks...')
+    remove.packages('TCGAbiolinks')
+    install_forked = TRUE
+  } else {
+    print('HERE')
+    print(packageVersion('TCGAbiolinks'))
+    print(packageVersion('TCGAbiolinks') != TCGAbiolinks_version)
+    install_forked = FALSE
+  }
+} else {
+  install_forked = TRUE
+}
+
+if (install_forked) {
+    print('Installing forked version of TCGAbiolinks from danmonyak/TCGAbiolinks')
+    print('Refrain from updating other packages (skip udates) unless necessary due to errors...')
+    remotes::install_github("danmonyak/TCGAbiolinks")
+    print('Installed!')
+    print('Loading library')
+    library(TCGAbiolinks)
+}
+```
+
+```{r other-setup}
+ 
 library(BiocFileCache) # Need to load this directly to set off hook in .Rprofile
                        # deals with issue when calling GDCprepare
 library(plyr)
