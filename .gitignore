@@ -34,3 +34,6 @@ refactoring-to-do.txt
 .Rproj.user
 config.json
 1. Simulation/send*
+
+2. TARGET Retrieval/MANIFEST.txt
+2. TARGET Retrieval/results.rds
