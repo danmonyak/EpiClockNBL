@@ -34,7 +34,7 @@ while True:
 repo_dir = os.path.join(os.sep, *subdir_list)
 ################################################
 # Load the variables in consts.json into a dictionary
-consts = json.loads(''.join(open(os.path.join(repo_dir, 'src', 'consts.json'), 'r').readlines()))
+consts = json.loads(''.join(open(os.path.join(repo_dir, 'EpiClockNBL', 'consts.json'), 'r').readlines()))
 consts['repo_dir'] = repo_dir
 try:
     config = json.loads(''.join(open(os.path.join(repo_dir, 'config.json'), 'r').readlines()))

@@ -16,7 +16,7 @@ import numpy as np
 import os
 import sys
 from sklearn.cluster import KMeans
-import EpiClockNBL.src.util as nbl_util
+import EpiClockNBL.util as nbl_util
 nbl_consts = nbl_util.consts
 
 ## Defines acceptable ranges (inclusive) for each value
