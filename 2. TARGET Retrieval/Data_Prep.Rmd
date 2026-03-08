@@ -6,7 +6,7 @@ params:
   project: TARGET-NBL
   save_data: true
   save_data_as_rds: true
-  save_path: "/Users/danielmonyak/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/TARGET/"
+  save_path: "TARGET/"
   GDCdata_dir: "gdc_data"
   rm_GDCdata_dir: False
   clinical_filename: "cohort1.clinical.TEST"
@@ -14,62 +14,21 @@ params:
   gene_filename: "cohort1.rnaseq.TEST"
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(TCGAbiolinks)
 
-getProcessedResponse <- function() {
-  response <- readline('Permission to remove current installation of TCGAbiolinks (necessary for data retrieval) ([y]/n): ')
-  response_processed <- stringr::str_to_lower(substr(response, 1, 1))
-  response_processed
-}
-```
-
-```{r install-packages}
 TCGAbiolinks_version <- read.table('TCGAbiolinks_version.txt')$V1
-
-
-# This package streamlines the data pull from GDC
-if (!require('remotes', quietly=TRUE)) {
-  install.packages('remotes')
-}
-if (!require('stringr', quietly=TRUE)) {
-  install.packages('stringr')
+if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
+  writeLines('Wrong version of TCGAbiolinks installed, need forked version...')
+  writeLines('Please run "sh setup.sh" first!')
+  knitr::knit_exit()
 }
 
-if (require('TCGAbiolinks', quietly=TRUE)) {
-  if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
-    print('Wrong version of TCGAbiolinks installed, need forked version...')
-    
-        
-    response_processed <- getProcessedResponse()
-    if (!(response_processed == '' || response_processed == 'y')) {
-      print('Permission not granted to remove current installation of TCGAbiolinks, quitting...')
-      knitr::knit_exit()
-    }
-    
-
-    print('Removing current installation of TCGAbiolinks...')
-    remove.packages('TCGAbiolinks')
-    install_forked = TRUE
-  } else {
-    print('HERE')
-    print(packageVersion('TCGAbiolinks'))
-    print(packageVersion('TCGAbiolinks') != TCGAbiolinks_version)
-    install_forked = FALSE
-  }
-} else {
-  install_forked = TRUE
-}
-
-if (install_forked) {
-    print('Installing forked version of TCGAbiolinks from danmonyak/TCGAbiolinks')
-    print('Refrain from updating other packages (skip udates) unless necessary due to errors...')
-    remotes::install_github("danmonyak/TCGAbiolinks")
-    print('Installed!')
-    print('Loading library')
-    library(TCGAbiolinks)
-}
+library(jsonlite)
+consts <- read_json(file.path(repo_dir, 'config.json'))
+save_path <- file.path(consts['official_indir'], params$save_path)
 ```
 
 ```{r other-setup}
@@ -125,12 +84,6 @@ Of the `r length(participant_subset)` participants of interest, `r length(unique
 #### Participants With More Than One Tumor In Set of Interest
 
 ```{r multiple_tumor_per_participant}
-# methyl_tumor_ids <- methyl_tumor_ids[1:10]
-# methyl_tumor_ids <- c("TARGET-30-PAIFXV-01A", "TARGET-30-PAISNS-01A",
-#                       "TARGET-30-PAITCI-01A", "TARGET-30-PAIVHE-01A",
-#                       "TARGET-30-PAIVMJ-01A", "TARGET-30-PAIVZR-01A",
-#                       "TARGET-30-PAIXFZ-01A", "TARGET-30-PAKHAV-01A")
-
 common_tumors <- sort(methyl_tumor_ids)
 duplicated.participants <- duplicated(getParticipantIDs(common_tumors)) |
   duplicated(getParticipantIDs(common_tumors), fromLast = TRUE)
@@ -212,9 +165,9 @@ For the `r sum(query_clinical$in_analysis_dataset)` participants in the analysis
 
 ```{r download_and_save_gene, eval = params$save_data}
 # download and save the gene expression data
-GDCdownload(query_gene, directory = paste0(params$save_path, params$GDCdata_dir))
+GDCdownload(query_gene, directory = paste0(save_path, params$GDCdata_dir))
 data.seq <- GDCprepare(query_gene, 
-                       directory = paste0(params$save_path, params$GDCdata_dir))
+                       directory = paste0(save_path, params$GDCdata_dir))
 
 # use the raw_counts data for GSEA
 raw_counts <- as.data.frame(data.seq@assays@data$unstranded)
@@ -241,10 +194,10 @@ raw_counts <- raw_counts[!rm_pary, ]
 dup_rows <- duplicated(data.seq@rowRanges$gene_name) | duplicated(data.seq@rowRanges$gene_name, fromLast = TRUE)
 table(data.seq@rowRanges$gene_name[dup_rows])
 
-write.table(raw_counts, file = paste0(params$save_path, params$gene_filename, "_raw_counts.tsv"), 
+write.table(raw_counts, file = paste0(save_path, params$gene_filename, "_raw_counts.tsv"), 
             sep = "\t")
 if (params$save_data_as_rds) saveRDS(raw_counts, 
-                                     file = paste0(params$save_path, 
+                                     file = paste0(save_path, 
                                                    params$gene_filename, 
                                                    "_raw_counts.rds"))
 dim(raw_counts)
@@ -255,9 +208,9 @@ rm(raw_counts, data.seq, query_gene)
 
 ```{r download_and_save_methyl, eval = params$save_data}
 # download and save the DNA methylation data
-GDCdownload(query_methyl, directory = paste0(params$save_path, params$GDCdata_dir))
+GDCdownload(query_methyl, directory = paste0(save_path, params$GDCdata_dir))
 data.methyl <- GDCprepare(query_methyl, 
-                          directory = paste0(params$save_path, params$GDCdata_dir))
+                          directory = paste0(save_path, params$GDCdata_dir))
 
 methyl <- data.methyl@assays@data[[1L]]
 colnames(methyl) <- rownames(data.methyl@colData)
@@ -280,10 +233,10 @@ dups.remove <- tumors.dups.methyl[sapply(tumors.dups.methyl, function (x) substr
 methyl <- methyl[, !(colnames(methyl) %in% c(dups.remove))]
 
 write.table(methyl, 
-            file = paste0(params$save_path, params$methyl_filename, ".tsv"), 
+            file = paste0(save_path, params$methyl_filename, ".tsv"), 
             sep = "\t")
 if (params$save_data_as_rds) saveRDS(methyl, 
-                                     file = paste0(params$save_path, 
+                                     file = paste0(save_path, 
                                                    params$methyl_filename, 
                                                    ".rds"))
 dim(methyl)
@@ -303,30 +256,11 @@ query_clinical_general <- GDCquery(
 )
 
 # Download the IHC
-GDCdownload(query_clinical_general, directory = paste0(params$save_path, params$GDCdata_dir))
+GDCdownload(query_clinical_general, directory = paste0(save_path, params$GDCdata_dir))
+
 # Import follow up data
-clinical_mycnAmp <- GDCprepare_clinic(query_clinical_general, clinical.info = "patient",
-                                      directory = paste0(params$save_path, params$GDCdata_dir))
-# clinical_ihc <- clinical_ihc[,
-#                   c('bcr_patient_barcode',
-#                     'breast_carcinoma_estrogen_receptor_status',
-#                     'breast_carcinoma_progesterone_receptor_status',
-#                     'lab_proc_her2_neu_immunohistochemistry_receptor_status')
-#              ]
-# query_clinical <- merge(query_clinical, clinical_ihc,
-#                                 by.x='submitter_id', by.y='bcr_patient_barcode',
-#                                 all.x=T)
-# 
-# 
-# query_clinical$breast_carcinoma_estrogen_receptor_status <-
-#   as.character(query_clinical$breast_carcinoma_estrogen_receptor_status)
-# query_clinical$breast_carcinoma_progesterone_receptor_status <-
-#   as.character(query_clinical$breast_carcinoma_progesterone_receptor_status)
-# query_clinical$lab_proc_her2_neu_immunohistochemistry_receptor_status <-
-#   as.character(query_clinical$lab_proc_her2_neu_immunohistochemistry_receptor_status)
-# 
-# # Drop problematic column
-# query_clinical <- query_clinical[, names(query_clinical) != 'sites_of_involvement']
+#clinical_mycnAmp <- GDCprepare_clinic(query_clinical_general, clinical.info = "patient",
+#                                      directory = paste0(save_path, #params$GDCdata_dir))
 ```
 
 ##### Clinical data
@@ -342,16 +276,16 @@ query_clinical_flat <- as.data.frame(lapply(query_clinical, function(col) {
   }
 }))
 
-write.table(query_clinical_flat, file = paste0(params$save_path, params$clinical_filename, ".tsv"), sep = "\t")
+write.table(query_clinical_flat, file = paste0(save_path, params$clinical_filename, ".tsv"), sep = "\t")
 if (params$save_data_as_rds) saveRDS(query_clinical_flat, 
-                                     file = paste0(params$save_path, 
+                                     file = paste0(save_path, 
                                                    params$clinical_filename, 
                                                    ".rds"))
 ```
 
 ```{r remove_gdc_data_direction, eval = params$save_data}
 if (params$rm_GDCdata_dir) {
-  unlink(paste0(params$save_path, params$GDCdata_dir), recursive = TRUE)
+  unlink(paste0(save_path, params$GDCdata_dir), recursive = TRUE)
 }
 ```
 
