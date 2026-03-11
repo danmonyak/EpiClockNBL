@@ -17,7 +17,6 @@ output_dir = 'outputs'
 outfile_dir = os.path.join(output_dir, 'outfiles')
 outdir = proj_dir
 outfile_path = os.path.join(proj_dir, 'beta_values_unbiased_sites.txt')
-criteria = copy.deepcopy(CLOCK_CRITERIA)
 
 def pipeline(verbose=True, make_figures=False):
     
@@ -71,6 +70,8 @@ def pipeline(verbose=True, make_figures=False):
         print('\nSelect unbiased sites...', end='\n\n')
         time.sleep(1)
 
+    criteria = copy.deepcopy(CLOCK_CRITERIA)
+    
     # NO NORMAL SAMPLE
     if 'normal' not in data['cohorts']:
         del criteria['normal']
