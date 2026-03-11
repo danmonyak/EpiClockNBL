@@ -52,10 +52,13 @@ Copy `config.json.example` and rename to `config.json`. Then open the file and i
 - **official_indir** — Path to a directory in an external file location (preferably Box) that can hold terabytes of data
 - **Figure_data_dir** — Path to a directory in an external file location (preferably Box) that can hold terabytes of data
 
+## 2. Supplementary Data Retrieval
+
+
+
 ## 3. Pipeline
 
-
-### 2. TCGA Retrieval
+### 2. TARGET Data Retrieval
 
 First install the `TCGAbiolinks` package by running the following:
 ```
@@ -68,3 +71,7 @@ bash Run_Data_Prep.sh
 ```
 
 It could take up to a few hours to run, though it will likely take less than 1 hour. This script should be run on a machine of at least 16 GB of memory.
+
+### 3. Select fCpGs
+
+Open the notebook Pipeline.ipynb inside "3. Select fCpGs" and run all cells.
