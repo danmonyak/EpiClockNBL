@@ -39,3 +39,13 @@ config.json
 2. TARGET Retrieval/results.rds
 
 Archive
+pipeline_template.py
+*.rds
+2. TARGET Retrieval/notes_for_later.txt
+3. Select fCpGs/outputs/old/
+figures_revision
+*.xlsx
+*.rtf
+Gaussian Mixture Model/GMM_STAN*_files
+Gaussian Mixture Model/*progress.txt
+.Rhistory
