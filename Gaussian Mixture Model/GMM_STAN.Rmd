@@ -6,13 +6,10 @@ output:
   # pdf_document: default
   html_document: default
 params:
-  # dataset: "Henrich"
-  # beta_vals_filename: "Henrich.methyl.TARGET_Clock_sites.tsv"
-  dataset: "TARGET"
-  beta_vals_filename: "NBL.methyl.antiNonIterClustNotStuck_sites.tsv"
-  # beta_vals_file_suffix: "methyl.TARGET_Clock_sites.tsv"
-  cloud_path: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets"
+  dataset:
+  beta_vals_filename:
   output_file_suffix: "GMM_results.csv"
+  progress_file_suffix: "GMM_progress.txt"
 ---
 
 ```{r setup, include=FALSE}
@@ -22,6 +19,10 @@ library(dplyr)
 library(ggplot2)
 library(bayesplot)
 library(reshape2)
+library(jsonlite)
+
+consts <- read_json(file.path(repo_dir, 'config.json'))
+proj_dir <- file.path(consts[['official_indir']], 'TARGET')
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -30,8 +31,7 @@ options(mc.cores = parallel::detectCores())
 ## Read in data
 
 ```{r import-data}
-# beta_vals_filename <- paste(params$dataset, params$beta_vals_file_suffix, sep='.')
-data <- read.table(file.path(params$cloud_path, params$dataset,
+data <- read.table(file.path(consts[['official_indir']], params$dataset,
                              params$beta_vals_filename), 
                    header = TRUE, sep = "\t")
 
@@ -58,6 +58,8 @@ sm <- stan_model("gmm.stan")
 all.results <- NULL # Collect the summary results in a dataframe
                     #     after each tumor is fit
 
+progress_filename <- paste(params$dataset, params$progress_file_suffix, sep='.')
+cat("Starting model fitting...\n", file = progress_filename, append = FALSE)
 for (j in 1:ncol(tumor_data)) {
   tumor_id <- colnames(tumor_data)[j]
   
@@ -210,6 +212,8 @@ for (j in 1:ncol(tumor_data)) {
   print(acf_plot)
   
   cat("\n\n")
+  
+  cat(sprintf("Completed %d of %d\n", j, ncol(tumor_data)), file = progress_filename, append = TRUE)
 }
 
 output_filename <- paste(params$dataset, params$output_file_suffix, sep='.')
