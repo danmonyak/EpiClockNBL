@@ -1,0 +1,208 @@
+---
+title: "NBL Predict Proliferation Score"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Setup and data import
+
+```{r setup, message = F}
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(kableExtra)
+library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+library(GSVA)
+library(GSEABase)
+library(glmnet)
+library(jsonlite)
+
+getSampleID <- function(s) {
+  paste(strsplit(s, "-", fixed = TRUE)[[1]][1:4], collapse = "-")
+}
+
+consts <- read_json(file.path(repo_dir, 'config.json'))
+proj_dir <- file.path(consts[['official_indir']], 'TARGET')
+
+proliferation.scores <- as.data.frame(readRDS(file.path(proj_dir, 'TARGET_ssGSEA_scores.rds')))
+row.names(proliferation.scores) <- sapply(row.names(proliferation.scores), getSampleID)
+methyl <- readRDS(file.path(proj_dir, 'cohort1.methyl.rds'))
+colnames(methyl) <- sapply(colnames(methyl), getSampleID)
+  
+clinical <- read.table(file.path(proj_dir, 'clinical.annotated.tsv'), sep='\t', header=T)
+clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
+analysis.samples <- clinical$sampleID[clinical$in_analysis_dataset]
+
+analysis.withExpr <- intersect(analysis.samples, row.names(proliferation.scores))
+analysis.noExpr <- setdiff(analysis.samples, row.names(proliferation.scores))
+
+proliferation.scores <- proliferation.scores[analysis.withExpr,]
+# methyl.unlabeled <- methyl[, setdiff(analysis.samples, analysis.withExpr)]
+# methyl <- methyl[, analysis.withExpr]
+```
+
+Out of the analysis cohort of `r length(analysis.samples)` samples, `r length(analysis.withExpr)` have proliferation scores from expression data.
+
+# Calculate gene-level methylation from TARGET DNA methylation data
+
+## CpG annotation and promoter selection
+
+```{r cpg-annotations}
+anno <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+
+anno_sub <- anno[rownames(methyl), ]
+
+promoter_cpgs <- anno_sub[
+  anno_sub$Relation_to_Island %in% c("Island", "N_Shore", "S_Shore") &
+    grepl("TSS1500|TSS200|5'UTR|1stExon", anno_sub$UCSC_RefGene_Group),
+]
+```
+
+CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore).
+
+## Mapping CpGs to genes
+
+```{r mapping-cpgs}
+cpg_to_gene <- data.frame(
+  cpg = rownames(promoter_cpgs),
+  gene = promoter_cpgs$UCSC_RefGene_Name
+)
+
+# handle multiple genes per CpG
+cpg_to_gene <- tidyr::separate_rows(cpg_to_gene, gene, sep = ";")
+
+cpg_to_gene <- cpg_to_gene[
+  !is.na(cpg_to_gene$gene) & cpg_to_gene$gene != "",
+]
+```
+
+Promoter-associated CpGs were mapped to genes using the UCSC RefGene annotation. Probes annotated to multiple genes were expanded such that each CpG–gene pair was treated independently. CpGs without valid gene annotations were excluded.
+
+## Aggregation to gene-level promoter methylation
+
+```{r aggregate-promoter-methylation}
+gene_meth <- sapply(unique(cpg_to_gene$gene), function(g) {
+  cpgs <- cpg_to_gene$cpg[cpg_to_gene$gene == g]
+  colMeans(methyl[cpgs, , drop = FALSE], na.rm = TRUE)
+}) # samples x genes
+
+n.na <- colSums(is.na(gene_meth))
+gene_meth <- as.data.frame(gene_meth[, n.na == 0])
+```
+
+For each gene, promoter methylation was summarized by taking the mean $\beta$-value across all associated promoter CpGs for each sample, resulting in a gene-by-sample matrix representing average promoter methylation per gene.
+
+# LASSO regression model
+
+## Create x and y objects for the model
+
+```{r create-x-y-objs}
+# Extract sample IDs and make them the row names
+# row.names(gene_meth) <- lapply(row.names(gene_meth), getSampleID)
+
+# Create x and y objects for model
+stopifnot(all(row.names(proliferation.scores) %in% row.names(gene_meth)))
+y <- rowMeans(proliferation.scores[, c("HALLMARK_E2F_TARGETS", "HALLMARK_G2M_CHECKPOINT"), ])
+sample.list <- row.names(proliferation.scores)
+x <- as.matrix(gene_meth[sample.list,])
+stopifnot(sum(is.na(x)) == 0)
+stopifnot(sum(is.na(y)) == 0)
+```
+
+Using `r length(y)` samples. Response variable is the mean of the HALLMARK_E2F_TARGETS and HALLMARK_G2M_CHECKPOINT scores.
+
+## Split into training and test sets
+
+```{r split-train-test}
+set.seed(123)
+
+n <- nrow(x)
+training.size <- 0.8
+
+train_idx <- sample(seq_len(n), size = training.size * n)
+
+x_train <- x[train_idx, ]
+x_test  <- x[-train_idx, ]
+
+y_train <- y[train_idx]
+y_test  <- y[-train_idx]
+```
+
+We will train the initial model using `r training.size*100`% of the labeled data: `r nrow(x_train)` training samples, `r nrow(x_test)` testing samples.
+
+## Train and evaluate the model
+
+```{r train-evaluate}
+# Fit
+set.seed(123)
+cv_fit <- cv.glmnet(
+  x_train, y_train,
+  alpha = 1,
+  family = "gaussian"
+)
+
+y.pred_train <- predict(cv_fit, newx = x_train, s = "lambda.min")
+y.pred_test <- predict(cv_fit, newx = x_test, s = "lambda.min")
+
+# RMSE
+rmse <- function(y, pred) sqrt(mean((y - pred)^2))
+
+# R-squared
+rsq <- function(y, pred) cor(y, pred)^2
+
+rmse.train <- rmse(y_train, y.pred_train)
+rmse.test <- rmse(y_test, y.pred_test)
+
+rsq.train <- rsq(y_train, y.pred_train)
+rsq.test <- rsq(y_test, y.pred_test)
+
+results <- data.frame(
+  Dataset = c("Training", "Test"),
+  RMSE = c(rmse.train, rmse.test),
+  R_squared = c(rsq.train, rsq.test)
+)
+
+kable(results, digits = 3) %>%
+  kable_styling(full_width = FALSE)
+
+cat(sprintf('Standard deviation of response variable: %.2f', sd(y)))
+```
+
+## Retrain lasso model on all labeled data
+
+We will train the final model using 100% of the labeled data: `r nrow(x)` samples. Then, we will predict the proliferation score values for the unlabeled data.
+
+```{r retrain}
+set.seed(123)
+cv_fit_final <- cv.glmnet(
+  x, y,
+  alpha = 1,
+  family = "gaussian"
+)
+
+stopifnot(all(analysis.noExpr %in% row.names(gene_meth)))
+x_unlabeled <- as.matrix(gene_meth[analysis.noExpr,])
+y_unlabeled_pred <- as.data.frame(predict(
+  cv_fit_final,
+  newx = x_unlabeled,
+  s = "lambda.min"
+))
+names(y_unlabeled_pred) = c('proliferation_score')
+
+results <- data.frame(
+  Dataset = c("Labeled set", "Predicted values"),
+  Mean = c(mean(y), mean(y_unlabeled_pred$proliferation_score)),
+  Stdev = c(sd(y), sd(y_unlabeled_pred$proliferation_score))
+)
+
+cat('Proliferation score distributions:')
+kable(results, digits = 3) %>%
+  kable_styling(full_width = FALSE)
+
+
+# Combined known and predicted scores
+scores_all <- rbind(y_unlabeled_pred, data.frame(proliferation_score=y))
+write.table(scores_all, file.path(proj_dir, 'TARGET_ssGSEA_scores_all.tsv'),
+            quote=F, sep='\t')
+```
+
