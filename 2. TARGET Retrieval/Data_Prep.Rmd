@@ -9,9 +9,9 @@ params:
   save_path: "TARGET/"
   GDCdata_dir: "gdc_data"
   rm_GDCdata_dir: False
-  clinical_filename: "cohort1.clinical.TEST"
-  methyl_filename: "cohort1.methyl.TEST"
-  gene_filename: "cohort1.rnaseq.TEST"
+  clinical_filename: "cohort1.clinical"
+  methyl_filename: "cohort1.methyl"
+  gene_filename: "cohort1.rnaseq"
 ---
 
 ```{r setup}
@@ -117,7 +117,7 @@ code_given <- query_clinical[, 'reason_methyl']
 sum(query_clinical[, 'reason_methyl'])
 
 # The analysis dataset
-query_clinical$in_analysis_dataset <- query_clinical$in_CpG_dataset
+# query_clinical$in_analysis_dataset <- query_clinical$in_CpG_dataset
 ```
 
 ENSURE THESE TWO NUMBERS AGREE: `r sum(query_clinical$in_CpG_dataset)` and `r sum(!code_given)`.
@@ -152,12 +152,12 @@ query_gene <- GDCquery(project = params$project,
                        workflow.type = 'STAR - Counts',
                        experimental.strategy = "RNA-Seq",
                        sample.type = c("Primary Tumor"),
-                       barcode = query_clinical$submitter_id[query_clinical$in_analysis_dataset])
+                       barcode = query_clinical$submitter_id[query_clinical$in_CpG_dataset])
 
 gene_participant_ids <- getParticipantIDs(getResults(query_gene, cols = "cases"))
 gene_tumor_ids <- getTumorIDs(getResults(query_gene, cols = "cases"))
 ```
-For the `r sum(query_clinical$in_analysis_dataset)` participants in the analysis dataset, `r length(unique(gene_tumor_ids))` gene expression datasets are available. There are `r sum(duplicated(gene_participant_ids))` duplicated participant ids in the gene expression dataset and `r sum(duplicated(gene_tumor_ids))` duplicated tumor ids.
+For the `r sum(query_clinical$in_CpG_dataset)` participants in the analysis dataset, `r length(unique(gene_tumor_ids))` gene expression datasets are available. There are `r sum(duplicated(gene_participant_ids))` duplicated participant ids in the gene expression dataset and `r sum(duplicated(gene_tumor_ids))` duplicated tumor ids.
 
 #### Download and Save
 
@@ -252,7 +252,7 @@ query_clinical_general <- GDCquery(
     data.category = "Clinical",
     data.type = "Clinical Supplement",
     data.format = "BCR XML",
-    # barcode = query_clinical$submitter_id[query_clinical$in_analysis_dataset]
+    # barcode = query_clinical$submitter_id[query_clinical$in_CpG_dataset]
 )
 
 # Download the IHC
