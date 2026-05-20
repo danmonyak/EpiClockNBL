@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import linregress, ranksums
 import json
+import sys
 
 
 ############################################################
@@ -16,9 +17,9 @@ repo_dir is needed to read src/consts.json
 """
 ################################################
 exception_msg = '-'*120
-exception_msg += '\nutil.py module can only imported inside of the EpiClockInvasiveBRCA directory (or a subdirectory)'
+exception_msg += '\nutil.py module can only imported inside of the EpiClockNBL directory (or a subdirectory)'
 exception_msg += '\nIf running a .py script, navigate to the subdirectory and run "python <script.py>"'
-exception_msg += '\nIf running a .ipynb jupyter notebook, ensure that the jupyter server was started inside the EpiClockInvasiveBRCA directory.'
+exception_msg += '\nIf running a .ipynb jupyter notebook, ensure that the jupyter server was started inside the EpiClockNBL directory.'
 exception_msg += '\n' + '-'*139
 
 subdir_list = os.getcwd().split(os.sep)
@@ -670,3 +671,33 @@ def plotTumorWise(beta_values, CpG_list=None, sample_list=None, n_samps=30, ncol
         print('Provide a file name...')
     else:      # Save plot
         fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)    
+
+
+def writeWithoutOverwrite(filepath, data,
+                          writeFunc, readFunc, compareFunc=None,
+                          verbose=True):
+    '''
+    Save file but don't overwrite existing file at the same path
+    
+    filepath: str
+    data: object
+    writeFunc: function(filepath, data)
+    readFunc: function(filepath)
+    compareFunc: function(data, existing_data)
+    verbose: boolean
+    '''
+    
+    if os.path.exists(filepath):
+        existing_data = readFunc(filepath)
+        if compareFunc:
+            comparison = compareFunc(data, existing_data)
+        else:
+            comparison = np.all(data == existing_data)
+        
+        if not comparison:
+            raise Exception('Current output would overwrite alternative data...')
+
+        if verbose:
+            print('Current output matches existing file.')
+    else:
+        writeFunc(filepath, data)
