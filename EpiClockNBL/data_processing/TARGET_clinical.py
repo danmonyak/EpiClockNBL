@@ -91,7 +91,7 @@ def pipeline(verbose=True):
         sheet_name='Clinical Data', index_col=0
         )
 
-    clinical.drop('MYCN status', axis=1, inplace=True, errors='ignore')
+    clinical = clinical.drop('MYCN status', axis=1, errors='ignore')
     clinical = clinical.merge(supp_tbl['MYCN status'], left_index=True, right_index=True, validate='one_to_one')
     clinical['MYCN status'] = clinical['MYCN status'].map({'Amplified':'MYCN-amplified', 'Not Amplified':'MYCN-nonamplified'})
 
