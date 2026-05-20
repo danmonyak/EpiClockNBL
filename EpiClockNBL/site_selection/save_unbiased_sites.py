@@ -2,6 +2,7 @@ import os
 import copy
 import time
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import EpiClockNBL.util as nbl_util
@@ -12,9 +13,7 @@ from .util import CLOCK_CRITERIA, getDataDict, gen_CpG_set, getBinEdges
 
 proj_dir = os.path.join(nbl_consts['official_indir'], 'TARGET')
 
-figure_outdir = 'figures'
-output_dir = 'outputs'
-outfile_dir = os.path.join(output_dir, 'outfiles')
+figure_outdir = os.path.join(nbl_consts['repo_dir'], 'figures_revision')
 outdir = proj_dir
 outfile_path = os.path.join(proj_dir, 'beta_values_unbiased_sites.txt')
 
@@ -37,8 +36,6 @@ def pipeline(verbose=True, make_figures=False):
         time.sleep(1)
         
     os.makedirs(figure_outdir, exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(outfile_dir, exist_ok=True)
     os.makedirs(outdir, exist_ok=True)
     
     if verbose:
@@ -55,7 +52,9 @@ def pipeline(verbose=True, make_figures=False):
     path_dict = {}
     path_dict['tumor'] = os.path.join(proj_dir, 'cohort1.methyl.tsv')
 
-    data = getDataDict(path_dict, filter_tum_samps=False, assert_same_sites=False)
+    clinical = pd.read_table(os.path.join(proj_dir, 'clinical.processed.tsv'))
+
+    data = getDataDict(path_dict, filter_tum_samps=False, assert_same_sites=False, sample_ids=clinical.loc[clinical['in_analysis_dataset'], 'sampleID'].values)
     data['tumor']['beta_values'] = data['tumor']['beta_values'].dropna(axis=1, how='all')
     data['tumor']['pureSamples'] = data['tumor']['pureSamples'][np.isin(data['tumor']['pureSamples'], data['tumor']['beta_values'].columns)]
     

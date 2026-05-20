@@ -14,8 +14,8 @@ from .util import clusteringWeights, getBinEdges
 
 proj_dir = os.path.join(nbl_consts['official_indir'], 'TARGET')
 
-figure_outdir = 'figures'
-output_dir = 'outputs'
+figure_outdir = os.path.join(nbl_consts['repo_dir'], 'figures_revision')
+output_dir = os.path.join(nbl_consts['repo_dir'], '3. Select fCpGs', 'outputs')
 outfile_dir = os.path.join(output_dir, 'outfiles')
 outdir = proj_dir
 

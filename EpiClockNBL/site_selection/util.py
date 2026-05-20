@@ -71,7 +71,7 @@ def getNeutralDNACpGs(chip_27k=False):
 
     return neutral_DNA_CpG_list
 
-def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
+def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True, sample_ids=None):
     """
     Return a dictionary that holds data for the the TCGA and normal cohorts
     
@@ -116,6 +116,9 @@ def getDataDict(data_paths, filter_tum_samps=False, assert_same_sites=True):
         data['tumor']['pureSamples'] = data['tumor']['purity'].index[
             data['tumor']['purity'] >= nbl_consts['LUMP_threshold']
         ].values
+    elif sample_ids is not None:
+        cols = data['tumor']['beta_values'].columns
+        data['tumor']['pureSamples'] = cols[cols.to_series().apply(nbl_util.getSampleID).isin(sample_ids)]
     else:
         data['tumor']['pureSamples'] = data['tumor']['beta_values'].columns.values
     
