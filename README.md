@@ -72,6 +72,35 @@ bash Run_Data_Prep.sh
 
 It could take up to a few hours to run, though it will likely take less than 1 hour. This script should be run on a machine of at least 16 GB of memory.
 
+#### 2b. Data Processing
+
+To generate the annotated clinical table, open the notebook Data_Processing_Pipeline.ipynb inside "2. TARGET Data Retrieval" and run all cells.
+
 ### 3. Select fCpGs
 
 Open the notebook Pipeline.ipynb inside "3. Select fCpGs" and run all cells.
+
+### 4. Process Supplementary Data
+
+Open the notebook Pipeline.ipynb inside "3. Select fCpGs" and run all cells.
+
+### 5. Gaussian Mixture Model
+
+We will fit a GMM to the tumors' beta values, in order to sample from the posterior of the mitotic age $\phi$. This requires the r library rstan, and it is likely a good idea to create a new conda virtual environment specifically for this purpose, as rstan can have installation and functionality issues. Once you have activated the virtual environment in terminal, navigate to "5. Gaussian Mixture Model" and run the following in terminal:
+
+TARGET cohort:
+```
+bash Run_GMM_STAN_TARGET.sh
+```
+
+Henrich cohort:
+```
+bash Run_GMM_STAN_Henrich.sh
+```
+
+For each cohort, the program will take a few hours to run, and you can check on the progress in these files: TARGET.GMM_progress.txt and Henrich.GMM_progress.txt.
+
+### 6. Analysis
+
+After the GMM script has been run for both cohorts, open the notebook Pipeline.ipynb inside "6. Analysis" and run all cells.
+
