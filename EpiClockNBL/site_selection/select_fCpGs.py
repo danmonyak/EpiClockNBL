@@ -1,4 +1,5 @@
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import pandas as pd
 import numpy as np
@@ -15,11 +16,13 @@ from .util import clusteringWeights, getBinEdges
 proj_dir = os.path.join(nbl_consts['official_indir'], 'TARGET')
 
 figure_outdir = os.path.join(nbl_consts['repo_dir'], 'figures_revision')
-output_dir = os.path.join(nbl_consts['repo_dir'], '3. Select fCpGs', 'outputs')
-outfile_dir = os.path.join(output_dir, 'outfiles')
-outdir = proj_dir
+DEFAULT_OUTPUT_DIR = os.path.join(nbl_consts['repo_dir'], '3. Select fCpGs', 'outputs')
 
-def pipeline(verbose=True, make_figures=False):
+# os.environ['OMP_NUM_THREADS'] = '1' # To avoid thread warnings
+
+def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, outdir=proj_dir, indir=proj_dir, beta_values_unbiased_sites_filename='beta_values_unbiased_sites.txt'):
+    
+    outfile_dir = os.path.join(output_dir, 'outfiles')
     
     if verbose:
         print(f'\nRunning select-fCpGs pipeline with verbose={verbose}, make_figures={make_figures}.')
@@ -62,7 +65,7 @@ def pipeline(verbose=True, make_figures=False):
 
     # Import beta values
     beta_values_unbiased_sites = pd.read_table(
-        os.path.join(proj_dir, 'beta_values_unbiased_sites.txt'),
+        os.path.join(indir, beta_values_unbiased_sites_filename),
         index_col=0
     )
     beta_values_unbiased_sites = beta_values_unbiased_sites.rename(columns=nbl_util.getSampleID)
@@ -176,7 +179,7 @@ def pipeline(verbose=True, make_figures=False):
     most_random_sites_nonIterNotStuck = clustering_weights_ser.sort_values().index[:target_n].values
 
     # Calculate c_beta using Clock sites
-    c_beta = 1 - beta_values_unbiased_sites.loc[most_random_sites_nonIterNotStuck].std(axis=0)
+    # c_beta = 1 - beta_values_unbiased_sites.loc[most_random_sites_nonIterNotStuck].std(axis=0)
 
     ########################
     ###### SAVE FILES ######
@@ -197,16 +200,16 @@ def pipeline(verbose=True, make_figures=False):
         np.savetxt(Clock_CpGs_filepath, Clock_CpGs, fmt='%s')
 
     ## Save c_beta values of final tumors
-    c_beta_final_samples = c_beta
-    c_beta_filepath = os.path.join(output_dir, f'NBL.c_beta.txt')
+    # c_beta_final_samples = c_beta
+    # c_beta_filepath = os.path.join(output_dir, f'NBL.c_beta.txt')
 
-    # Save c_beta values, don't overwrite existing file
-    if os.path.exists(c_beta_filepath):
-        existing_c_beta = pd.read_table(c_beta_filepath, index_col=0, header=None).squeeze("columns")
-        assert (c_beta_final_samples - existing_c_beta < 1e-6).all()
-        print('Current output matches existing file.')
-    else:
-        c_beta_final_samples.to_csv(c_beta_filepath, sep='\t', header=False)
+    # # Save c_beta values, don't overwrite existing file
+    # if os.path.exists(c_beta_filepath):
+    #     existing_c_beta = pd.read_table(c_beta_filepath, index_col=0, header=None).squeeze("columns")
+    #     assert (c_beta_final_samples - existing_c_beta < 1e-6).all()
+    #     print('Current output matches existing file.')
+    # else:
+    #     c_beta_final_samples.to_csv(c_beta_filepath, sep='\t', header=False)
 
     # Save beta values of Clock sites
     outfile_path = os.path.join(outdir, f'NBL.methyl.antiNonIterClustNotStuck_sites.tsv')
