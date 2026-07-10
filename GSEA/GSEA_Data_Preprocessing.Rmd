@@ -5,19 +5,29 @@ date: "`r Sys.Date()`"
 output: html_document
 params:
   project: "TARGET-NBL" # CANCER
-  dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets/"
-  out_dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET/"
+  # dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/Datasets"
+  # out_dir: "~/Library/CloudStorage/Box-Box/PROJECT 06023: MolClocks/Neuroblastoma_Paper/GSEA/TARGET"
   GDCdata_dir: "GDC_data"
-  count_data_file: "TARGET/cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
-  c_beta_file: "TARGET/NBL.gmm_phi.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
+  count_data_file: "cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
+  # c_beta_file: "TARGET/NBL.gmm_phi.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
+  clinical_file: "clinical.processed.withAges.tsv"
   output_gct_file: "neuroblastoma_deseq_scale_factor"
   output_cls_file: "neuroblastoma_gmm_phi"
+  phi_var: "phi"
 ---
   
-  ```{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(DESeq2)
-library(TCGAbiolinks)
+# library(TCGAbiolinks)
+
+library(jsonlite)
+
+consts <- read_json(file.path(repo_dir, 'config.json'))
+proj_dir <- file.path(consts[['official_indir']], 'TARGET')
+
+out_dir <- file.path(proj_dir, 'GSEA')
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 ```
 
 Expression count data must be normalized for between-sample comparisons. 
@@ -40,9 +50,7 @@ object not just the matrix returned. This will require adding `save = TRUE,
 save.filename = filename` as inputs to the GDCprepare call.
 
 ```{r load_counts_data}
-library(DESeq2)
-
-data <- readRDS(paste0(params$dir, params$count_data_file))
+data <- readRDS(file.path(proj_dir, params$count_data_file))
 is(data)
 
 data$gene_id <- sub("\\..*", "", data$gene_id)
@@ -50,16 +58,18 @@ data$gene_id <- sub("\\..*", "", data$gene_id)
 colnames(data) <- sub("-01A.*", "-01A", colnames(data))
 colnames(data) <- sub("-01B.*", "-01B", colnames(data))
 colnames(data) <- sub("-01C.*", "-01C", colnames(data))
-
-
 ```
 
-## Load the C-beta
+## Load the correlator data
 
 We load the c-beta values here to ensure that the final normalized count matrix is in the same order as the phenotype.
 
 ```{r read_c_beta}
-c_beta_measured <- read.table(paste0(params$dir, params$c_beta_file), sep = "\t", header = FALSE)
+# c_beta_measured <- read.table(file.path(proj_dir, params$c_beta_file), sep = "\t", header = FALSE)
+clinical <- read.table(file.path(proj_dir, params$clinical_file), sep='\t', header=T)
+c_beta_measured <- clinical
+# rownames(c_beta_measured) <- c_beta_measured$sampleID
+c_beta_measured <- c_beta_measured[, c('sampleID', params$phi_var)]
 
 c_beta_measured <- t(c_beta_measured)
 
@@ -92,6 +102,16 @@ colnames(c_beta_measured) <- gsub(".", "-", colnames(c_beta_measured), fixed = T
 # design ~ 1 means we aren't grouping based on categories such as batch, normal/tumor, etc.
 deseq_data <- data[, !(colnames(data) %in% c("gene_id", "gene_name"))]
 rownames(deseq_data) <- data$gene_id
+
+#####
+# gene_names <- data$gene_name
+# keep <- !is.na(gene_names) & gene_names != ""
+# deseq_data <- rowsum(
+#   as.matrix(data[keep, !(colnames(data) %in% c("gene_id", "gene_name"))]),
+#   group = gene_names[keep]
+# )
+#####
+
 colData <- data.frame(condition = factor(rep("tumor", ncol(deseq_data))))
 rownames(colData) <- colnames(deseq_data)
 # 
@@ -124,7 +144,9 @@ cat("The names in each dataset line up?",
 .convertToGCT <- function(x) {
   x_df <- as.data.frame(x)
   x_df <- cbind("Description" = NA, x_df)
+  #
   row.names(x_df) <- sub("\\..*", "", row.names(x_df))
+  #
   x_df <- cbind("Name" = row.names(x_df), x_df)
   x_df
 }
@@ -132,33 +154,37 @@ cat("The names in each dataset line up?",
 
 ```{r save_gct_function}
 .createGCT <- function(x, pth, nm) {
+  filepath <- file.path(pth, paste0(nm, ".gct"))
   print(nm)
-  cat("#1.2\n", file = paste0(pth, nm, ".gct"), append = FALSE)
-  cat(paste0(nrow(x), "\t", ncol(x), "\n"), file = paste0(pth, nm, ".gct"), append = TRUE)
+  cat("#1.2\n", file = filepath, append = FALSE)
+  cat(paste0(nrow(x), "\t", ncol(x), "\n"), file = filepath, append = TRUE)
   x <- .convertToGCT(x)
-  cat(paste(colnames(x), collapse = "\t"), "\n", file = paste0(pth, nm, ".gct"), append = TRUE)
+  cat(paste(colnames(x), collapse = "\t"), "\n", file = filepath, append = TRUE)
+  cat(sprintf("Saving to path: %s\n", filepath))
   write.table(x,
-              file = paste0(pth, nm, ".gct"),
+              file = filepath,
               sep = "\t", quote = FALSE, row.names = FALSE,
               col.names = FALSE, append = TRUE)
 }
 ```
 
 ```{r create_gct_outputs}
-.createGCT(deseq_normal, pth = params$out_dir, nm = params$output_gct_file)
+.createGCT(deseq_normal, pth = out_dir, nm = params$output_gct_file)
 ```
 
 ```{r save_cls_function}
 .createCLS <- function(x, pth, nm) {
-  cat("#numeric\n", file = paste0(pth, nm, ".cls"), append = FALSE)
-  cat(paste0("#", nm, "\n"), file = paste0(pth, nm, ".cls"), append = TRUE)
+  filepath <- file.path(pth, paste0(nm, ".cls"))
+  cat("#numeric\n", file = filepath, append = FALSE)
+  cat(paste0("#", nm, "\n"), file = filepath, append = TRUE)
+  cat(sprintf("Saving to path: %s\n", filepath))
   write.table(t(drop(x[1L, ])),
-              file = paste0(pth, nm, ".cls"),
+              file = filepath,
               sep = "\t", quote = FALSE, row.names = FALSE,
               col.names = FALSE, append = TRUE)
 }
 ```
 
 ```{r create_cls_outputs}
-.createCLS(c_beta_measured, pth = params$out_dir, nm = params$output_cls_file)
+.createCLS(c_beta_measured, pth = out_dir, nm = params$output_cls_file)
 ```
