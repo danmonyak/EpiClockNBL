@@ -6,6 +6,8 @@ output:
   # pdf_document: default
   html_document: default
 params:
+  prefix:
+  beta_vals_dir:
   dataset:
   beta_vals_filename:
   output_file_suffix: "GMM_results.csv"
@@ -31,12 +33,25 @@ options(mc.cores = parallel::detectCores())
 ## Read in data
 
 ```{r import-data}
-data <- read.table(file.path(consts[['official_indir']], params$dataset,
+if (is.null(params$beta_vals_dir)) {
+  beta_vals_dir <- file.path(consts[['official_indir']], params$dataset)
+} else {
+  beta_vals_dir <- params$beta_vals_dir
+}
+
+data <- read.table(file.path(beta_vals_dir,
                              params$beta_vals_filename), 
                    header = TRUE, sep = "\t")
 
 site_ids <- data[[1]]
 tumor_data <- data[,-1]
+
+# for testing
+# tumor_data <- tumor_data[, 1:2]
+#
+
+# bad_tumor <- 'TARGET.30.PARBLH.01A'
+# tumor_data <- tumor_data[, bad_tumor, drop=F]
 
 num_tumors <- ncol(tumor_data)
 num_sites <- nrow(tumor_data)
@@ -59,6 +74,9 @@ all.results <- NULL # Collect the summary results in a dataframe
                     #     after each tumor is fit
 
 progress_filename <- paste(params$dataset, params$progress_file_suffix, sep='.')
+if (!is.null(params$prefix)) {
+  progress_filename <- paste(params$prefix, progress_filename, sep='.')
+}
 cat("Starting model fitting...\n", file = progress_filename, append = FALSE)
 for (j in 1:ncol(tumor_data)) {
   tumor_id <- colnames(tumor_data)[j]
@@ -78,11 +96,17 @@ for (j in 1:ncol(tumor_data)) {
     object  = sm,
     data    = list(N_data = N_obs, y = y),
     chains  = 4,
-    iter    = 4000,
-    warmup  = 2000,
-    seed    = 42,
-    control = list(adapt_delta = 0.99, max_treedepth = 15)
+    # iter    = 4000,
+    # warmup  = 2000,
+    iter    = 8000,
+    warmup  = 4000,
+    seed    = 0,
+    # seed   = 42,
+    control = list(adapt_delta = 0.99, max_treedepth = 15),
+    verbose = FALSE,
+    refresh = 0
   )
+  # bad_fit
 
   if (is.null(fit)) {
     print('########################################')
@@ -217,5 +241,8 @@ for (j in 1:ncol(tumor_data)) {
 }
 
 output_filename <- paste(params$dataset, params$output_file_suffix, sep='.')
+if (!is.null(params$prefix)) {
+  output_filename <- paste(params$prefix, output_filename, sep='.')
+}
 write.csv(all.results, output_filename, row.names = T)
 ```
