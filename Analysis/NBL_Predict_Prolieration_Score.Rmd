@@ -2,11 +2,16 @@
 title: "NBL Predict Proliferation Score"
 date: "`r Sys.Date()`"
 output: html_document
+params:
+  load_data: TRUE
+  # nfolds: 30
 ---
 
 # Setup and data import
 
 ```{r setup, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
 library(ggplot2)
 library(dplyr)
 library(ggfortify)
@@ -26,10 +31,8 @@ proj_dir <- file.path(consts[['official_indir']], 'TARGET')
 
 proliferation.scores <- as.data.frame(readRDS(file.path(proj_dir, 'TARGET_ssGSEA_scores.rds')))
 row.names(proliferation.scores) <- sapply(row.names(proliferation.scores), getSampleID)
-methyl <- readRDS(file.path(proj_dir, 'cohort1.methyl.rds'))
-colnames(methyl) <- sapply(colnames(methyl), getSampleID)
   
-clinical <- read.table(file.path(proj_dir, 'clinical.annotated.tsv'), sep='\t', header=T)
+clinical <- read.table(file.path(proj_dir, 'clinical.processed.tsv'), sep='\t', header=T)
 clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
 analysis.samples <- clinical$sampleID[clinical$in_analysis_dataset]
 
@@ -37,8 +40,8 @@ analysis.withExpr <- intersect(analysis.samples, row.names(proliferation.scores)
 analysis.noExpr <- setdiff(analysis.samples, row.names(proliferation.scores))
 
 proliferation.scores <- proliferation.scores[analysis.withExpr,]
-# methyl.unlabeled <- methyl[, setdiff(analysis.samples, analysis.withExpr)]
-# methyl <- methyl[, analysis.withExpr]
+
+gene_meth_filepath <- file.path(proj_dir, 'gene_meth.rds')
 ```
 
 Out of the analysis cohort of `r length(analysis.samples)` samples, `r length(analysis.withExpr)` have proliferation scores from expression data.
@@ -47,7 +50,10 @@ Out of the analysis cohort of `r length(analysis.samples)` samples, `r length(an
 
 ## CpG annotation and promoter selection
 
-```{r cpg-annotations}
+```{r cpg-annotations, eval=!params$load_data || (!file.exists(gene_meth_filepath))}
+methyl <- readRDS(file.path(proj_dir, 'cohort1.methyl.rds'))
+colnames(methyl) <- sapply(colnames(methyl), getSampleID)
+
 anno <- getAnnotation(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
 
 anno_sub <- anno[rownames(methyl), ]
@@ -62,7 +68,7 @@ CpG probes were annotated using the appropriate Illumina array annotation packag
 
 ## Mapping CpGs to genes
 
-```{r mapping-cpgs}
+```{r mapping-cpgs, eval=!params$load_data || (!file.exists(gene_meth_filepath))}
 cpg_to_gene <- data.frame(
   cpg = rownames(promoter_cpgs),
   gene = promoter_cpgs$UCSC_RefGene_Name
@@ -80,7 +86,7 @@ Promoter-associated CpGs were mapped to genes using the UCSC RefGene annotation.
 
 ## Aggregation to gene-level promoter methylation
 
-```{r aggregate-promoter-methylation}
+```{r aggregate-promoter-methylation, eval=!params$load_data || (!file.exists(gene_meth_filepath))}
 gene_meth <- sapply(unique(cpg_to_gene$gene), function(g) {
   cpgs <- cpg_to_gene$cpg[cpg_to_gene$gene == g]
   colMeans(methyl[cpgs, , drop = FALSE], na.rm = TRUE)
@@ -88,7 +94,14 @@ gene_meth <- sapply(unique(cpg_to_gene$gene), function(g) {
 
 n.na <- colSums(is.na(gene_meth))
 gene_meth <- as.data.frame(gene_meth[, n.na == 0])
+
+saveRDS(gene_meth, gene_meth_filepath)
 ```
+
+```{r load-gene-meth, eval=params$load_data && file.exists(gene_meth_filepath)}
+gene_meth <- readRDS(gene_meth_filepath)
+```
+
 
 For each gene, promoter methylation was summarized by taking the mean $\beta$-value across all associated promoter CpGs for each sample, resulting in a gene-by-sample matrix representing average promoter methylation per gene.
 
@@ -114,7 +127,7 @@ Using `r length(y)` samples. Response variable is the mean of the HALLMARK_E2F_T
 ## Split into training and test sets
 
 ```{r split-train-test}
-set.seed(123)
+set.seed(0)
 
 n <- nrow(x)
 training.size <- 0.8
@@ -134,11 +147,14 @@ We will train the initial model using `r training.size*100`% of the labeled data
 
 ```{r train-evaluate}
 # Fit
-set.seed(123)
+set.seed(0)
+
 cv_fit <- cv.glmnet(
   x_train, y_train,
   alpha = 1,
-  family = "gaussian"
+  family = "gaussian",
+  nfolds = length(y_train),
+  grouped = FALSE
 )
 
 y.pred_train <- predict(cv_fit, newx = x_train, s = "lambda.min")
@@ -177,7 +193,9 @@ set.seed(123)
 cv_fit_final <- cv.glmnet(
   x, y,
   alpha = 1,
-  family = "gaussian"
+  family = "gaussian",
+  nfolds = length(y_train),
+  grouped = FALSE
 )
 
 stopifnot(all(analysis.noExpr %in% row.names(gene_meth)))
