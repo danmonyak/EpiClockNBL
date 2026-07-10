@@ -6,9 +6,9 @@ params:
   project: TARGET-NBL
   save_data: true
   save_data_as_rds: true
-  save_path: "TARGET/"
+  save_path: "TARGET"
   GDCdata_dir: "gdc_data"
-  rm_GDCdata_dir: False
+  rm_GDCdata_dir: True
   clinical_filename: "cohort1.clinical"
   methyl_filename: "cohort1.methyl"
   gene_filename: "cohort1.rnaseq"
@@ -17,7 +17,11 @@ params:
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(BiocFileCache) # Library import prevents odd errors with TCGAbiolinks
+library(plyr)
+library(jsonlite)
 library(TCGAbiolinks)
+library(sesameData)
 
 TCGAbiolinks_version <- read.table('TCGAbiolinks_version.txt')$V1
 if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
@@ -26,16 +30,17 @@ if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
   knitr::knit_exit()
 }
 
-library(jsonlite)
 consts <- read_json(file.path(repo_dir, 'config.json'))
-save_path <- file.path(consts['official_indir'], params$save_path)
-```
 
-```{r other-setup}
- 
-library(BiocFileCache) # Need to load this directly to set off hook in .Rprofile
-                       # deals with issue when calling GDCprepare
-library(plyr)
+if (consts[["Windows"]]) {
+  save_path <- file.path("P:", params$save_path)
+} else {
+  save_path <- file.path(consts[['official_indir']], params$save_path)
+}
+
+if (!dir.exists(save_path)) {
+  dir.create(save_path)
+}
 
 keepN_fields <- function(x, n) {
   fields <- strsplit(x, "-")[[1]]
@@ -107,17 +112,12 @@ There are `r length(unique(common_tumors))` tumors with methylation data; `r sum
 query_clinical$in_CpG_dataset <- query_clinical$submitter_id %in% getParticipantIDs(common_tumors)
 
 # ensure that something did not go wrong
-# code_given <- apply(query_clinical[, reasons], 1L, any)
 code_given <- query_clinical[, 'reason_methyl']
 
 ################################################
 ################################################
 
-# colSums(query_clinical[, reasons])
 sum(query_clinical[, 'reason_methyl'])
-
-# The analysis dataset
-# query_clinical$in_analysis_dataset <- query_clinical$in_CpG_dataset
 ```
 
 ENSURE THESE TWO NUMBERS AGREE: `r sum(query_clinical$in_CpG_dataset)` and `r sum(!code_given)`.
@@ -165,9 +165,14 @@ For the `r sum(query_clinical$in_CpG_dataset)` participants in the analysis data
 
 ```{r download_and_save_gene, eval = params$save_data}
 # download and save the gene expression data
-GDCdownload(query_gene, directory = paste0(save_path, params$GDCdata_dir))
-data.seq <- GDCprepare(query_gene, 
-                       directory = paste0(save_path, params$GDCdata_dir))
+GDCdownload(query_gene,
+            directory = file.path(save_path, params$GDCdata_dir))
+data.seq <- GDCprepare(query_gene,
+                        directory = normalizePath(
+                        file.path(save_path, params$GDCdata_dir),
+                        winslash = "/",
+                        mustWork = TRUE)
+                       )
 
 # use the raw_counts data for GSEA
 raw_counts <- as.data.frame(data.seq@assays@data$unstranded)
@@ -194,12 +199,10 @@ raw_counts <- raw_counts[!rm_pary, ]
 dup_rows <- duplicated(data.seq@rowRanges$gene_name) | duplicated(data.seq@rowRanges$gene_name, fromLast = TRUE)
 table(data.seq@rowRanges$gene_name[dup_rows])
 
-write.table(raw_counts, file = paste0(save_path, params$gene_filename, "_raw_counts.tsv"), 
+write.table(raw_counts, file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.tsv")), 
             sep = "\t")
 if (params$save_data_as_rds) saveRDS(raw_counts, 
-                                     file = paste0(save_path, 
-                                                   params$gene_filename, 
-                                                   "_raw_counts.rds"))
+                                     file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.rds")))
 dim(raw_counts)
 rm(raw_counts, data.seq, query_gene)
 ```
@@ -208,9 +211,13 @@ rm(raw_counts, data.seq, query_gene)
 
 ```{r download_and_save_methyl, eval = params$save_data}
 # download and save the DNA methylation data
-GDCdownload(query_methyl, directory = paste0(save_path, params$GDCdata_dir))
-data.methyl <- GDCprepare(query_methyl, 
-                          directory = paste0(save_path, params$GDCdata_dir))
+GDCdownload(query_methyl, directory = file.path(save_path, params$GDCdata_dir))
+data.methyl <- GDCprepare(query_methyl,
+                          directory = normalizePath(
+                            file.path(save_path, params$GDCdata_dir),
+                            winslash = "/",
+                            mustWork = TRUE)
+                          )
 
 methyl <- data.methyl@assays@data[[1L]]
 colnames(methyl) <- rownames(data.methyl@colData)
@@ -233,34 +240,13 @@ dups.remove <- tumors.dups.methyl[sapply(tumors.dups.methyl, function (x) substr
 methyl <- methyl[, !(colnames(methyl) %in% c(dups.remove))]
 
 write.table(methyl, 
-            file = paste0(save_path, params$methyl_filename, ".tsv"), 
+            file = file.path(save_path, paste0(params$methyl_filename, ".tsv")), 
             sep = "\t")
 if (params$save_data_as_rds) saveRDS(methyl, 
-                                     file = paste0(save_path, 
-                                                   params$methyl_filename, 
-                                                   ".rds"))
+                                     file = file.path(save_path, paste0(params$methyl_filename, ".rds")))
+
 dim(methyl)
 rm(methyl, data.methyl, query_methyl)
-```
-
-
-##### Retrieve supplementary clinical data
-
-```{r get_ihc_data, eval = params$save_data}
-query_clinical_general <- GDCquery(
-    project = params$project,
-    data.category = "Clinical",
-    data.type = "Clinical Supplement",
-    data.format = "BCR XML",
-    # barcode = query_clinical$submitter_id[query_clinical$in_CpG_dataset]
-)
-
-# Download the IHC
-GDCdownload(query_clinical_general, directory = paste0(save_path, params$GDCdata_dir))
-
-# Import follow up data
-#clinical_mycnAmp <- GDCprepare_clinic(query_clinical_general, clinical.info = "patient",
-#                                      directory = paste0(save_path, #params$GDCdata_dir))
 ```
 
 ##### Clinical data
@@ -276,16 +262,14 @@ query_clinical_flat <- as.data.frame(lapply(query_clinical, function(col) {
   }
 }))
 
-write.table(query_clinical_flat, file = paste0(save_path, params$clinical_filename, ".tsv"), sep = "\t")
+write.table(query_clinical_flat, file = file.path(save_path, paste0(params$clinical_filename, ".tsv")), sep = "\t")
 if (params$save_data_as_rds) saveRDS(query_clinical_flat, 
-                                     file = paste0(save_path, 
-                                                   params$clinical_filename, 
-                                                   ".rds"))
+                                     file = file.path(save_path, paste0(params$clinical_filename, ".rds")))
 ```
 
 ```{r remove_gdc_data_direction, eval = params$save_data}
 if (params$rm_GDCdata_dir) {
-  unlink(paste0(save_path, params$GDCdata_dir), recursive = TRUE)
+  unlink(file.path(save_path, params$GDCdata_dir), recursive = TRUE)
 }
 ```
 
