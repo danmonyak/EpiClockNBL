@@ -21,7 +21,7 @@ getSampleID <- function(s) {
 consts <- read_json(file.path(repo_dir, 'config.json'))
 proj_dir <- file.path(consts[['official_indir']], 'TARGET')
 
-clinical <- read.table(file.path(proj_dir, 'clinical.annotated.tsv'), sep='\t', header=T)
+clinical <- read.table(file.path(proj_dir, 'clinical.processed.tsv'), sep='\t', header=T)
 clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
 analysis.samples <- clinical$sampleID[clinical$in_analysis_dataset]
 
@@ -37,6 +37,9 @@ There are `r length(analysis.samples)` samples in the TARGET cohort. `r n.overla
 # Grab gene names
 gene_names <- expression.data$gene_name
 expression.data <- expression.data[, !(colnames(expression.data) %in% c('gene_name', 'gene_id'))]
+
+sum(duplicated(gene_names))
+length(unique(gene_names))
 
 # Prepare data
 # Sum counts for duplicate gene names
