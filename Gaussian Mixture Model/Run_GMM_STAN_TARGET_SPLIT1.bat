@@ -1,0 +1,2 @@
+@echo off
+Rscript -e "rmarkdown::render('GMM_STAN.Rmd', output_format = 'html_document', output_file = paste0('SENSITIVITY_SPLIT1_GMM_STAN_', format(Sys.time(), '%%Y-%%m-%%d_%%H-%%M-%%S'), '.html'), params = list(prefix='SENSITIVITY_SPLIT1', beta_vals_dir='C:\\Users\\DanMonyak\\Documents\\RyserLab\\EpiClockNBL\\3. Select fCpGs\\outputs\\split1', dataset='TARGET', beta_vals_filename='beta_values_all_tumors_split1_sites.tsv'))"
