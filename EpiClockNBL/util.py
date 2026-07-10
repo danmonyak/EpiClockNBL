@@ -8,7 +8,10 @@ import seaborn as sns
 from scipy.stats import linregress, ranksums
 import json
 import sys
-
+import unicodedata
+import re
+from pathlib import Path
+root = Path.cwd().anchor
 
 ############################################################
 """
@@ -22,17 +25,17 @@ exception_msg += '\nIf running a .py script, navigate to the subdirectory and ru
 exception_msg += '\nIf running a .ipynb jupyter notebook, ensure that the jupyter server was started inside the EpiClockNBL directory.'
 exception_msg += '\n' + '-'*139
 
-subdir_list = os.getcwd().split(os.sep)
+subdir_list = os.getcwd().split(root)[1].split(os.sep)
 while True:
     try:
-        if subdir_list[-1] == 'EpiClockNBL':
+        if (subdir_list[-1] == 'EpiClockNBL') and (subdir_list[-2] != 'EpiClockNBL'):
             break
     except IndexError:
         raise Exception(exception_msg) from None
     
     subdir_list.pop()
-        
-repo_dir = os.path.join(os.sep, *subdir_list)
+
+repo_dir = root + os.path.join(*subdir_list)
 ################################################
 # Load the variables in consts.json into a dictionary
 consts = json.loads(''.join(open(os.path.join(repo_dir, 'EpiClockNBL', 'consts.json'), 'r').readlines()))
@@ -168,8 +171,10 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
         use_samples_mask &= sample_annotations['in_analysis_dataset']
         if outfile:
             outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}-restrict.{file_format}'
+            outfile_name = safe_filename(outfile_name)
     elif outfile:
         outfile_name = f'{sample_annotations.name}-{var_cat}-{var_y}.{file_format}'
+        outfile_name = safe_filename(outfile_name)
 
     # Exclude samples with missing data
     use_samples_mask &= ~sample_annotations[var_y].isna()
@@ -187,7 +192,7 @@ def saveBoxPlotNew(sample_annotations, var_cat, var_y='c_beta', ax=None, restric
     if ax is None:
         fig, ax = plt.subplots(figsize=np.array(figsize) * sf)
     sns.boxplot(ax=ax, data=plot_data, x=var_cat, y=var_y,
-                order=use_groups, palette=palette,
+                order=use_groups, palette=palette[:len(use_groups)],
                 linewidth=linewidth * sf, fliersize=fliersize * sf)
 
     ######################################################
@@ -700,4 +705,35 @@ def writeWithoutOverwrite(filepath, data,
         if verbose:
             print('Current output matches existing file.')
     else:
+        if verbose:
+            print('Saved new file.')
         writeFunc(filepath, data)
+    if verbose:
+        print(filepath)
+
+def safe_filename(s):
+    # Convert accented chars into ASCII equivalents
+    s = unicodedata.normalize('NFKD', s)
+    s = s.encode('ascii', 'ignore').decode('ascii')
+
+    # Remove invalid filename chars
+    s = re.sub(r'[<>:"/\\|?*]', '', s)
+
+    # Replace whitespace with underscores
+    s = re.sub(r'\s+', '_', s)
+
+    return s
+
+def stage_mapper(stage):
+    if stage == 'Stage 4':
+        return stage
+    elif (stage == 'Stage 4S') or stage.startswith('Stage 1') or stage.startswith('Stage 2') or stage.startswith('Stage 3'):
+        return 'Stage 1/2/3/4S'
+    return None
+
+def risk_mapper(risk):
+    if risk == 'High risk':
+        return risk
+    elif (risk == 'Low risk') or (risk == 'Intermediate risk'):
+        return 'Low/intermediate risk'
+    return None
