@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo -n "Permission to remove current installation of TCGAbiolinks (for for data retrieval), if necessary, and reinstall from fork ([y]/n): "
+echo -n "Permission to remove current installation of TCGAbiolinks (for data retrieval), if necessary, and reinstall from fork ([y]/n): "
 read permissionInput
 
 permissionInput="${permissionInput:0:1}"

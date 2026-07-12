@@ -14,7 +14,7 @@ Provides
 import pandas as pd
 import numpy as np
 import os
-import sys
+import random
 from sklearn.cluster import KMeans
 import EpiClockNBL.util as nbl_util
 nbl_consts = nbl_util.consts
@@ -327,3 +327,37 @@ def getBinEdges(start, stop, binwidth, hardStop=True):
         while bin_edges[-1] < stop:
             bin_edges.append(bin_edges[-1] + binwidth)
         return bin_edges
+
+def get_random_split(lst, k, seed=None):
+    """
+    Randomly partition a list into k roughly equal-sized groups.
+
+    The same seed will always produce the same grouping.
+    """
+    rng = random.Random(seed)
+    shuffled = lst.copy()
+    rng.shuffle(shuffled)
+
+    return [shuffled[i::k] for i in range(k)]
+
+
+def get_random_split(lst, k, seed=None):
+    """
+    Randomly partition a list into k roughly equal-sized groups.
+
+    The same seed will always produce the same grouping.
+    """
+    rng = random.Random(seed)
+    shuffled = lst.copy()
+    rng.shuffle(shuffled)
+
+    return [shuffled[i::k] for i in range(k)]
+
+def get_random_sample(lst, frac=0.8, seed=None):
+    """
+    Return a random sample containing approximately frac of the list.
+
+    The same seed will always produce the same sample.
+    """
+    rng = random.Random(seed)
+    return rng.sample(lst, k=round(frac * len(lst)))

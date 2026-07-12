@@ -7,17 +7,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import EpiClockNBL.util as nbl_util
 nbl_consts = nbl_util.consts
-from .util import CLOCK_CRITERIA, getDataDict, gen_CpG_set, getBinEdges
+from .util import CLOCK_CRITERIA, getDataDict, gen_CpG_set, getBinEdges, get_random_split, get_random_sample
 
 # IO directories
 
 proj_dir = os.path.join(nbl_consts['official_indir'], 'TARGET')
 
 figure_outdir = os.path.join(nbl_consts['repo_dir'], 'figures_revision')
-outdir = proj_dir
-outfile_path = os.path.join(proj_dir, 'beta_values_unbiased_sites.txt')
 
-def pipeline(verbose=True, make_figures=False):
+def pipeline(verbose=True, make_figures=False,
+             random_sample=False, random_sample_frac=None,
+             random_split=False, random_seed=0,
+             outdir=proj_dir, filenames=['beta_values_unbiased_sites.txt']):
     
     if verbose:
         print(f'Running save-unbiased-sites pipeline with verbose={verbose}, make_figures={make_figures}.')
@@ -75,8 +76,42 @@ def pipeline(verbose=True, make_figures=False):
     if 'normal' not in data['cohorts']:
         del criteria['normal']
 
-    unbiased_sites = gen_CpG_set(data, criteria=criteria, neutral_DNA_CpG_list=None)
-    data['tumor']['beta_values_SELECTION'].loc[unbiased_sites].to_csv(outfile_path, sep='\t')
+    # Random split logic
+    if random_sample:
+        print('Randomly sampling tumors for sensitivity analysis')
+        
+        sampled_tumors = get_random_sample(
+            list(data['tumor']['pureSamples']),
+            frac=random_sample_frac,
+            seed=random_seed
+        )
+        sample_splits = [
+            sampled_tumors
+        ]
+        
+    elif random_split:
+        print('Splitting tumors into two random groups for sensitivity analysis')
+        sample_splits = get_random_split(
+            list(data['tumor']['pureSamples']),
+            k = 2,
+            seed=random_seed
+        )
+    else: # no splitting
+        sample_splits = [
+            list(data['tumor']['pureSamples'])
+        ]
+
+    i = 0
+    for finame, samp_split in zip(filenames, sample_splits):
+        if verbose and (len(sample_splits) > 1):
+            print(f'Selecting unbiased sites in group {i+1}')
+        data['tumor']['pureSamples'] = samp_split
+
+        unbiased_sites = gen_CpG_set(data, criteria=criteria, neutral_DNA_CpG_list=None)
+        outfile_path = os.path.join(outdir, finame)
+        data['tumor']['beta_values_SELECTION'].loc[unbiased_sites].to_csv(outfile_path, sep='\t')
+
+        i += 1
 
     if verbose:
         print('\nDONE')
@@ -84,7 +119,7 @@ def pipeline(verbose=True, make_figures=False):
     ####################################################################################
     ####################################################################################
     
-    if not make_figures:
+    if random_sample or random_split or not make_figures:
         return
     #
     #

@@ -51,6 +51,13 @@ def pipeline(verbose=True):
 
     gmm_results_henrich = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'Henrich.GMM_results.csv'), index_col=0)
 
+    # Sensitivity analysis
+    gmm_results_target_sensitivity_split1 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'SENSITIVITY_SPLIT1.TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target_sensitivity_split1.index = gmm_results_target_sensitivity_split1.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
+
+    gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target_sensitivity_split2.index = gmm_results_target_sensitivity_split2.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
+
     if verbose:
         print('DONE')
 
@@ -63,9 +70,12 @@ def pipeline(verbose=True):
         time.sleep(1)
 
     # Add GMM phi
-    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target['phi.mean'].rename('phi'), left_on='sampleID', right_index=True)
-    clinical['Henrich'] = clinical['Henrich'].merge(gmm_results_henrich['phi.mean'].rename('phi'), left_index=True, right_index=True)
+    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target['phi.mean'].rename('phi'), left_on='sampleID', right_index=True, validate="one_to_one")
+    clinical['Henrich'] = clinical['Henrich'].merge(gmm_results_henrich['phi.mean'].rename('phi'), left_index=True, right_index=True, validate="one_to_one")
 
+    # Sensitivity analysis
+    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_sensitivity_split1['phi.mean'].rename('phi.split1'), left_on='sampleID', right_index=True, validate="one_to_one")
+    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_sensitivity_split2['phi.mean'].rename('phi.split2'), left_on='sampleID', right_index=True, validate="one_to_one")
 
     if verbose:
         print('DONE')
@@ -75,7 +85,7 @@ def pipeline(verbose=True):
 
     # Save clinical tables
     if verbose:
-        print('Saving clinical tables...', end=' ')
+        print('Saving clinical tables...', end='\n\n')
         time.sleep(1)
 
     nbl_util.writeWithoutOverwrite(
@@ -94,4 +104,4 @@ def pipeline(verbose=True):
     )
 
     if verbose:
-        print('DONE')
+        print('\nDONE')

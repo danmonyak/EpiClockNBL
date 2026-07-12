@@ -52,7 +52,7 @@ def pipeline(verbose=True):
     
     # Process clinical data
     if verbose:
-        print('\nProcessing clinical data...', end=' ')
+        print('\nProcessing clinical data...', end='\n')
         time.sleep(1)
 
     # Add sample IDs
@@ -67,6 +67,10 @@ def pipeline(verbose=True):
     clinical['Neuroblastoma_diagnosis'] = clinical['primary_diagnosis'] == 'Neuroblastoma, NOS'
     clinical['in_analysis_dataset'] = clinical['LUMP_pure'] & clinical['Neuroblastoma_diagnosis']
 
+    print(clinical['primary_diagnosis'].value_counts())
+    print(f'{(~clinical['Neuroblastoma_diagnosis']).sum()} tumors were ganglioneuroblastomas')
+    print(f'{(clinical['Neuroblastoma_diagnosis'] & ~clinical['LUMP_pure']).sum()} neuroblastoma tumors had LUMP < 0.7')
+
     # Process certain columns
     clinical['Age'] = clinical['age_at_diagnosis'] / 365
     # assert not clinical['Age'].astype(float).isna().any()
@@ -75,7 +79,7 @@ def pipeline(verbose=True):
     clinical['cog_neuroblastoma_risk_group'] = clinical['cog_neuroblastoma_risk_group'].map(lambda x:x.capitalize() if type(x) is str else x)
 
     if verbose:
-        print('DONE')
+        print('\nDONE')
 
 
     ####################################################################################
@@ -94,6 +98,8 @@ def pipeline(verbose=True):
     clinical = clinical.drop('MYCN status', axis=1, errors='ignore')
     clinical = clinical.merge(supp_tbl['MYCN status'], left_index=True, right_index=True, validate='one_to_one')
     clinical['MYCN status'] = clinical['MYCN status'].map({'Amplified':'MYCN-amplified', 'Not Amplified':'MYCN-nonamplified'})
+    clinical['Stage grouped'] = clinical['inss_stage'].map(nbl_util.stage_mapper)
+    clinical['Risk grouped'] = clinical['cog_neuroblastoma_risk_group'].map(nbl_util.risk_mapper)
 
     if verbose:
         print('DONE')
@@ -106,10 +112,10 @@ def pipeline(verbose=True):
         print('\nRetrieving and joining in follow-up (survival) data from supplementary clinical data...', end=' ')
         time.sleep(1)
 
-    follow_up = pd.read_table(os.path.join(proj_dir, 'follow_up.tsv'), na_values=["'--"])
-    follow_up_selected = follow_up.loc[follow_up['case_submitter_id'].isin(clinical.index) & (follow_up['timepoint_category']=='Last Contact'),
-                                   ['case_submitter_id', 'days_to_follow_up', 'year_of_follow_up']].set_index('case_submitter_id')
-    clinical = clinical.merge(follow_up_selected, left_index=True, right_index=True, how='left', validate='one_to_one')
+    # follow_up = pd.read_table(os.path.join(proj_dir, 'follow_up.tsv'), na_values=["'--"])
+    # follow_up_selected = follow_up.loc[follow_up['case_submitter_id'].isin(clinical.index) & (follow_up['timepoint_category']=='Last Contact'),
+    #                                ['case_submitter_id', 'days_to_follow_up', 'year_of_follow_up']].set_index('case_submitter_id')
+    # clinical = clinical.merge(follow_up_selected, left_index=True, right_index=True, how='left', validate='one_to_one')
 
     if verbose:
         print('DONE')
@@ -119,7 +125,7 @@ def pipeline(verbose=True):
     
     # Save processd clinical data
     if verbose:
-        print('\nSave processd clinical data...', end=' ')
+        print('\nSave processed clinical data...', end=' ')
         time.sleep(1)
 
     nbl_util.writeWithoutOverwrite(
