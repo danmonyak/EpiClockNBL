@@ -21,7 +21,7 @@ library(BiocFileCache) # Library import prevents odd errors with TCGAbiolinks
 library(plyr)
 library(jsonlite)
 library(TCGAbiolinks)
-library(sesameData)
+library(sesameData) # Loading can prevent errors with TCGAbiolinks
 
 TCGAbiolinks_version <- read.table('TCGAbiolinks_version.txt')$V1
 if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
