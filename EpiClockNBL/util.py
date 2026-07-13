@@ -25,7 +25,11 @@ exception_msg += '\nIf running a .py script, navigate to the subdirectory and ru
 exception_msg += '\nIf running a .ipynb jupyter notebook, ensure that the jupyter server was started inside the EpiClockNBL directory.'
 exception_msg += '\n' + '-'*139
 
-subdir_list = os.getcwd().split(root)[1].split(os.sep)
+cwd = os.getcwd()
+if root != os.sep:
+    cwd = cwd.split(root)[1]
+
+subdir_list = cwd.split(os.sep)
 while True:
     try:
         if (subdir_list[-1] == 'EpiClockNBL') and (subdir_list[-2] != 'EpiClockNBL'):
