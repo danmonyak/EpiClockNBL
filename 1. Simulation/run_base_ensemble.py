@@ -1,12 +1,10 @@
 """
-run_ensemble.py
+run_base_ensemble.py
 =======
 Author - Daniel Monyak
 12-27-25
 =======
 
-Source code for running 
-    
 """
 
 import numpy as np
@@ -15,52 +13,25 @@ import os
 from time import time
 from math import floor
 import simulation as sim
-from EpiClockInvasiveBRCA.src.simulation_util import *
+from EpiClockNBL.simulation.util import (
+    writeBetaValues, writeNcells,
+    resetObjsDeleteFiles
+)
 
 ###########################################################################
 ################################ Arguments ################################
 ###########################################################################
 split_limit = int(1e7)
 n_split = 200
-# split_limit = int(1e5)
-# n_split = 10
-
-sigma = 0.05842
-digits = 1
-delta_t_raw = 1/(2-sigma)
-delta_t = floor(delta_t_raw * 10**digits) / 10**digits
-total_time_years_param = 1
 ###########################################################################
 ###########################################################################
 
-
-prog_params_list = [
-    {'output_dir':'90_sites_NB_split_base', 'n_CpGs_each':30,
-               # 'flip_rate':(0.0042 / .17),
+prog_params = {'output_dir':'90_sites_NB_split_base', 'n_CpGs_each':30,
                'flip_rate':0.0075,
-               'death_rate':0.11158, 'nyears':1, 'seed':0},
-    {'output_dir':'90_sites_NB_split_base', 'n_CpGs_each':30,
-               # 'flip_rate':(0.0042 / .17),
-               'prolif_rate':delta_t,
-               'flip_rate':1e-3,
-               'death_rate':(1-sigma) * delta_t,
-               'nyears':total_time_years_param / delta_t,
-               'delta_t':delta_t,
-               'seed':0}
-]
-
-prog_params = prog_params_list[1]
+               'prolif_rate':0.17,
+               'death_rate':0.11158, 'nyears':1, 'seed':0}
 
 print(f'Running simulation with the following parameters: {prog_params}')
-
-# Constant parameters
-FLIP_RATE = 0.002
-PROLIF_RATE = 0.17
-
-if 'flip_rate' not in prog_params:
-    prog_params['flip_rate'] = FLIP_RATE
-if 'prolif_rate' not in prog_params:
-    prog_params['prolif_rate'] = PROLIF_RATE
 
 os.makedirs(prog_params['output_dir'], exist_ok=True)
 
@@ -100,7 +71,7 @@ if os.path.exists(n_cells_outfilepath):
 total_before = time()
 i = k = 0    # i is day, k is iteration (i \neq j iff the simulation restarts)
 while (not ensmbl.atCapacity()) and (i < total_days+1):
-    if k == 1e9:     # don't loop forever
+    if k == int(1e9):     # don't loop forever
         sys.exit()
 
     n_cells = ensmbl.getNumCells()
@@ -132,12 +103,6 @@ while (not ensmbl.atCapacity()) and (i < total_days+1):
         ens_splits = response['data']
         print(f'Split into {ensmbl.n_split} ensembles.')
         print('#'*50)
-        # for i, ens in enumerate(ens_splits):
-        #     print(f'Writing ensemble {i}...')
-        #     split_name = f'split_{i}'
-        #     ens.saveAsDirectory(parent_outdir=os.path.join(prog_params['output_dir'], 'splits'),
-        #                         outdir=split_name)
-        #     writeLine(split_jobs_filepath, split_name)
         print('All ensembles written')
         break
     # had to restart (e.g. all cells died)
