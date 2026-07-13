@@ -111,6 +111,20 @@ Inside the directory entered for *official_indir*, create directories called *TA
 
 ### 1. Simulation
 
+It is necessary to run the simulation on a high-compute cluster to handle the high memory/compute necessary. Simply put, the simulation is run using *run_base_ensemble.py*, which simulates a growing tumor's fCpG states until a certain time point, and then the cells of the tumor are divided equally into 200 parts, and then each is simulated individually for the remaining time using *run_split.py*.
+
+To run *run_base_ensemble.py*:
+```
+sbatch run_base_ensemble.sh
+```
+
+To run *run_split.py*, schedule the various *run_split.sh* jobs with a scheduler:
+```
+sbatch job_scheduler_run_split.sh
+```
+
+In order to recombine the simulated data from the various simulation splits and create the related figures, Open the notebook *Create Simulation Figures.ipynb* inside *1. Simulation* and run all cells.
+
 ### 2. TARGET Data Retrieval
 
 First install the `TCGAbiolinks` package by running the following:
