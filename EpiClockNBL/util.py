@@ -685,8 +685,15 @@ def plotTumorWise(beta_values, CpG_list=None, sample_list=None, n_samps=30, ncol
 class OverwriteError(Exception):
     '''
     Raised by writeWithoutOverwrite when the data to save differs from the existing file
+    
+    filepath: str
+    message: str - if None, use the default message
     '''
-    pass
+    def __init__(self, filepath, message=None):
+        if message is None:
+            message = f'Current output would overwrite alternative data at {filepath}'
+        super().__init__(message)
+        self.filepath = filepath
 
 def writeWithoutOverwrite(filepath, data,
                           writeFunc, readFunc, compareFunc=None,
@@ -716,7 +723,7 @@ def writeWithoutOverwrite(filepath, data,
                 comparison = False
         
         if not comparison:
-            raise OverwriteError('Current output would overwrite alternative data...')
+            raise OverwriteError(filepath)
 
         if verbose:
             print('Current output matches existing file.')
