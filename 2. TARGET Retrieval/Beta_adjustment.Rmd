@@ -11,7 +11,6 @@ params:
   processed_clinical_filename: "clinical.processed.tsv"
   lookup_filename: "GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
-  restrict_to_clock_sites: true
   output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
 editor_options:
   markdown:
@@ -108,7 +107,7 @@ cat("All current tumors are in the purity dataset:",
 
 ### Read CpG Sites
 
-```{r clock_set_data, eval=params$restrict_to_clock_sites}
+```{r clock_set_data}
 # subset the methylation data to the clock set fCpGs
 cpg_sites <- read.csv(file.path(repo_dir, "3. Select fCpGs", "outputs",
                                 "NBL_Clock_CpGs.txt"),
