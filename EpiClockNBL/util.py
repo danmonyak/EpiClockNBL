@@ -381,6 +381,10 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     i.e. sample_annotations.name = 'dataset'
 
     """
+    try:
+        getattr(sample_annotations, 'name')
+    except AttributeError:
+        sample_annotations.name = ''
     
     ########################
     ##### Select data
