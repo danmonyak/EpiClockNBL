@@ -12,7 +12,7 @@ params:
   processed_clinical_filename: "clinical.processed.tsv"
   purity_filename: "csv file containing purity estimates"
   lookup_filename: "xlsx file containing CpG site specific beta values from WB"
-  cibersort_filename: "Cibersort_LM22_500perm_All_Tumors.csv"
+  cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
 editor_options: 
   markdown: 
     wrap: 72
@@ -102,8 +102,9 @@ cat("Dimensions of current RNAseq data", dim(brca.seq), "\n")
 
 #### Read CIBERSORTx Results
 
-The CIBERSORT analysis was completed for all tumors with bulk RNA data using 
-the LM22 signature, LM22 B-mode batch correction, and 500 permutations.
+The CIBERSORT analysis was completed for the tumors in the analysis cohort with
+bulk RNA data using the LM22 signature, LM22 B-mode batch correction, and 500
+permutations.
 
 ```{r cibersor_read}
 idx <- match(getTumorIDs(colnames(brca.methyl)), getTumorIDs(cibersort$Mixture))
