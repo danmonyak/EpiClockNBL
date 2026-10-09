@@ -252,11 +252,10 @@ bash Run_GMM_STAN_Henrich.sh
 
 Sensitivity analysis (the two halves from stage 3):
 
-- On Windows, open *Run_GMM_STAN_TARGET_SPLIT1.bat* and *Run_GMM_STAN_TARGET_SPLIT2.bat*, change the `beta_vals_dir` path to point at your clone, and run both.
-- On Mac/Linux, run the following, replacing the template with the path to your clone, and then repeat it with `SPLIT1` and `split1` replaced by `SPLIT2` and `split2`:
-  ```
-  Rscript -e "rmarkdown::render('GMM_STAN.Rmd', output_format = 'html_document', output_file = paste0('SENSITIVITY_SPLIT1_GMM_STAN_', format(Sys.time(), '%Y-%m-%d_%H-%M-%S'), '.html'), params = list(prefix='SENSITIVITY_SPLIT1', beta_vals_dir='/PATH/TO/EpiClockNBL/3. Select fCpGs/outputs/split1', dataset='TARGET', beta_vals_filename='beta_values_all_tumors_split1_sites.tsv'))"
-  ```
+```
+bash Run_GMM_STAN_TARGET_SPLIT1.sh
+bash Run_GMM_STAN_TARGET_SPLIT2.sh
+```
 
 Each run takes a few hours. Progress is written to a file in the same folder, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv* and *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*.
 

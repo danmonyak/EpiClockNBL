@@ -36,7 +36,8 @@ options(mc.cores = parallel::detectCores())
 if (is.null(params$beta_vals_dir)) {
   beta_vals_dir <- file.path(consts[['official_indir']], params$dataset)
 } else {
-  beta_vals_dir <- params$beta_vals_dir
+  # beta_vals_dir is relative to the repository directory
+  beta_vals_dir <- file.path(repo_dir, params$beta_vals_dir)
 }
 
 data <- read.table(file.path(beta_vals_dir,
