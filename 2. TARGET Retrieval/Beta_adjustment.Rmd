@@ -26,10 +26,11 @@ source('util.R')
 consts <- read_json(file.path(repo_dir, 'config.json'))
 
 if (consts[["Windows"]]) {
-  save_path <- file.path("P:", params$save_path)
+  official_indir <- "P:"
 } else {
-  save_path <- file.path(consts[['official_indir']], params$save_path)
+  official_indir <- consts[['official_indir']]
 }
+save_path <- file.path(official_indir, params$save_path)
 ```
 
 #  {.tabset}
@@ -140,7 +141,8 @@ in the $l^{th}$ cell-type taken from the WBC lookup table.
 #### Beta Value Lookup
 
 ```{r read_wbc_xlsx}
-lookup <- readxl::read_excel(file.path(save_path, params$lookup_filename))
+# the lookup table is in official_indir itself
+lookup <- readxl::read_excel(file.path(official_indir, params$lookup_filename))
 
 # keep only the CpG sites of interest
 idx <- match(rownames(methyl_data), lookup$ID_REF)
