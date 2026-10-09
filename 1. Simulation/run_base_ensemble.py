@@ -12,7 +12,7 @@ import sys
 import os
 from time import time
 from math import floor
-import simulation as sim
+import EpiClockNBL.simulation.simulation as sim
 from EpiClockNBL.simulation.util import (
     writeBetaValues, writeNcells,
     resetObjsDeleteFiles
