@@ -46,16 +46,16 @@ def pipeline(verbose=True):
         print('Loading GMM results...', end=' ')
         time.sleep(1)
 
-    gmm_results_target = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target.index = gmm_results_target.index.map(lambda x:x.replace('.', '-'))
 
-    gmm_results_henrich = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'Henrich.GMM_results.csv'), index_col=0)
+    gmm_results_henrich = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'Henrich.GMM_results.csv'), index_col=0)
 
     # Sensitivity analysis
-    gmm_results_target_sensitivity_split1 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'SENSITIVITY_SPLIT1.TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target_sensitivity_split1 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'SENSITIVITY_SPLIT1.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_sensitivity_split1.index = gmm_results_target_sensitivity_split1.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
 
-    gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], 'Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_sensitivity_split2.index = gmm_results_target_sensitivity_split2.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
 
     if verbose:
