@@ -158,7 +158,7 @@ subst P: /D
 
 #### 2b. Data Processing
 
-To generate the annotated clinical table, open the notebook Data_Processing_Pipeline.ipynb inside "2. TARGET Data Retrieval" and run all cells.
+To generate the annotated clinical table, open the notebook Data_Processing_Pipeline.ipynb inside "2. TARGET Retrieval" and run all cells.
 
 ### 3. Select fCpGs
 
