@@ -11,7 +11,7 @@ params:
   processed_clinical_filename: "clinical.processed.tsv"
   lookup_filename: "GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
-  output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
+  output_filename: "cohort1.analysis_tumors.methyl_adjusted.rds"
 editor_options:
   markdown:
     wrap: 72
@@ -221,7 +221,6 @@ cat("This adjustment results in ", mean(beta_adj1_tumor < 0.0 | beta_adj1_tumor 
 # truncation to physical values
 beta_adj1_tumor <- pmin(pmax(beta_adj1_tumor, 0.0), 1.0)
 
-write.table(beta_adj1_tumor,
-            file = file.path(save_path, params$output_filename),
-            sep = "\t")
+saveRDS(beta_adj1_tumor, 
+        file = file.path(save_path, params$output_filename))
 ```
