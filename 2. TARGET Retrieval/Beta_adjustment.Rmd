@@ -116,7 +116,10 @@ cat("Dimensions of CIBERSORT results", dim(cibersort), "\n")
 
 ### Purity Values
 
-Purity estimates are the LUMP values in the processed clinical table.
+Purity estimates are the LUMP values in the processed clinical table. The
+LUMP method is taken from Aran, D., Sirota, M. and Butte, A. J. (2015)
+Systematic pan-cancer analysis of tumor purity. Nature Communications,
+6, 8971.
 
 ```{r read_purity}
 # keep only the data for tumors used in the analysis
