@@ -1,2 +1,4 @@
 #!/bin/bash
+# run from the parent directory, where GMM_STAN.Rmd is
+cd "$(dirname "$0")/.."
 Rscript -e "rmarkdown::render('GMM_STAN.Rmd', output_format = 'html_document', output_file = paste0('SENSITIVITY_SPLIT2_GMM_STAN_', format(Sys.time(), '%Y-%m-%d_%H-%M-%S'), '.html'), params = list(prefix='SENSITIVITY_SPLIT2', beta_vals_dir='3. Select fCpGs/outputs/split2', dataset='TARGET', beta_vals_filename='beta_values_all_tumors_split2_sites.tsv'))"

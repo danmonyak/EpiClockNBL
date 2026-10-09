@@ -261,26 +261,26 @@ This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_C
 
 A Gaussian mixture model is fit to each tumor's beta values in order to sample from the posterior of the mitotic age $\phi$. This requires the R library rstan, so activate the rstan environment first.
 
-From inside `5. Gaussian Mixture Model`, run all four of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file.
+The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all four of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
 
 TARGET cohort:
 ```
-bash Run_GMM_STAN_TARGET.sh
+bash bin/Run_GMM_STAN_TARGET.sh
 ```
 
 Henrich cohort:
 ```
-bash Run_GMM_STAN_Henrich.sh
+bash bin/Run_GMM_STAN_Henrich.sh
 ```
 
 Sensitivity analysis (the two halves from stage 3):
 
 ```
-bash Run_GMM_STAN_TARGET_SPLIT1.sh
-bash Run_GMM_STAN_TARGET_SPLIT2.sh
+bash bin/Run_GMM_STAN_TARGET_SPLIT1.sh
+bash bin/Run_GMM_STAN_TARGET_SPLIT2.sh
 ```
 
-Each run takes a few hours. Progress is written to a file in the same folder, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv* and *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*.
+Each run takes a few hours. Progress is written to a file in `5. Gaussian Mixture Model`, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv* and *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*.
 
 ### 6. Main Analysis
 
