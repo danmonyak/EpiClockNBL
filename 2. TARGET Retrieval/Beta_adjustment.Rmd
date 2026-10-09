@@ -26,7 +26,11 @@ library(jsonlite)
 
 consts <- read_json(file.path(repo_dir, 'config.json'))
 
-save_path <- file.path(consts[['official_indir']], params$save_path)
+if (consts[["Windows"]]) {
+  save_path <- file.path("P:", params$save_path)
+} else {
+  save_path <- file.path(consts[['official_indir']], params$save_path)
+}
 
 gg_theme <- theme(panel.grid.major = element_blank(), 
                   panel.grid.minor = element_blank(),
