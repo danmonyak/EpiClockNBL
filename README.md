@@ -77,6 +77,7 @@ General R environment:
 - sesame
 - sesameData
 - survival
+- tibble
 - tidyr
 
 A forked version of `TCGAbiolinks` is also needed; it is installed by a setup script in [stage 2](#2-target-retrieval).
@@ -211,14 +212,26 @@ From inside `1. Simulation`:
 3. Open *Data_Prep.Rmd* and *Knit* the file. This retrieves the TARGET methylation, gene expression and clinical data (including the clinical supplement with MYCN status), saves it to *official_indir*/TARGET, and generates an HTML report.
 
    This usually takes less than 1 hour but can take a few hours. Use a machine with at least 16 GB of memory. With only 8 GB it can work, but it will take a few hours and the computer should not be used for anything else at the same time.
-4. **Windows only.** When it has finished, unlink the virtual `P:` drive in PowerShell:
-   ```
-   subst P: /D
-   ```
+
+The TPM gene expression matrix is saved only as an `.rds` file at this point; the `.tsv` version is written in step 2c.
 
 #### 2b. Data processing
 
 Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate the annotated clinical table.
+
+#### 2c. CIBERSORTx
+
+1. From inside `2. TARGET Retrieval`, run:
+   ```
+   Rscript Save_Cibersort_Input.R
+   ```
+   This saves the TPM gene expression data as *cohort1.rnaseq_tpm.tsv* in *official_indir*/TARGET, restricted to the tumors in the analysis cohort that have gene expression data. On Windows, the virtual `P:` drive from step 2a must still be linked.
+2. Upload *cohort1.rnaseq_tpm.tsv* to [CIBERSORTx](https://cibersortx.stanford.edu/) as the mixture file and run it with the LM22 signature matrix, B-mode batch correction, absolute mode and 500 permutations.
+3. Save the results as *Cibersort_LM22_500perm_Analysis_Tumors.csv* in *official_indir*/TARGET.
+4. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
+   ```
+   subst P: /D
+   ```
 
 ### 3. Select fCpGs
 

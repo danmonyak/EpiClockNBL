@@ -22,6 +22,7 @@ library(plyr)
 library(jsonlite)
 library(TCGAbiolinks)
 library(sesameData) # Loading can prevent errors with TCGAbiolinks
+library(tibble)
 
 TCGAbiolinks_version <- read.table('TCGAbiolinks_version.txt')$V1
 if (as.character(packageVersion('TCGAbiolinks')) != TCGAbiolinks_version) {
@@ -204,15 +205,15 @@ raw_counts <- process_gene_expr(raw_counts)
 tpm <- tpm[!is.na(tpm$gene_name) & tpm$gene_name != "", ]
 expr <- as.matrix(tpm[, setdiff(colnames(tpm), c("gene_id", "gene_name"))])
 tpm <- rowsum(expr, group = tpm$gene_name)
+tpm <- rownames_to_column(as.data.frame(tpm), var = "Gene")
 
-# ------------------------ Save raw counts
-write.table(tpm, file = file.path(save_path, paste0(params$gene_filename, "_tpm.tsv")), 
-            sep = "\t")
-if (params$save_data_as_rds) saveRDS(tpm, 
-                                     file = file.path(save_path, paste0(params$gene_filename, "_tpm.rds")))
 # ------------------------ Save tpm
+# Only saved as rds here
+# Save_Cibersort_Input.R saves the tsv file, restricted to the analysis cohort
+saveRDS(tpm, file = file.path(save_path, paste0(params$gene_filename, "_tpm.rds")))
+# ------------------------ Save raw counts
 write.table(raw_counts, file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.tsv")), 
-            sep = "\t")
+            sep = "\t", quote = F)
 if (params$save_data_as_rds) saveRDS(raw_counts, 
                                      file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.rds")))
 # ---------------------------------------
