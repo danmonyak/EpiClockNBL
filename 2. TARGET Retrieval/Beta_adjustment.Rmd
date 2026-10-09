@@ -24,6 +24,8 @@ library(ggpubr)
 library(ggsci)
 library(jsonlite)
 
+source('util.R')
+
 consts <- read_json(file.path(repo_dir, 'config.json'))
 
 if (consts[["Windows"]]) {
@@ -64,8 +66,8 @@ cat("Dimensions of raw RNAseq data", dim(brca.seq), "\n")
 brca.seq_ensembl <- brca.seq$gene_id
 brca.seq_gene.name <- brca.seq$gene_name
 
-idx <- match(substr(colnames(brca.methyl), 1L, 16L),
-             substr(colnames(brca.seq), 1L, 16L))
+idx <- match(getTumorIDs(colnames(brca.methyl)),
+             getTumorIDs(colnames(brca.seq)))
 if (any(is.na(idx))) stop("something went wrong in RNA data!")
 brca.seq <- brca.seq[, idx]
 brca.seq <- data.matrix(brca.seq)
@@ -81,10 +83,10 @@ LM22 B-mode batch correction, and 500 permutations.
 ```{r cibersor_read}
 cibersort <- read.csv(file.path(save_path, 
                                 params$cibersort_filename))
-idx <- match(substr(colnames(brca.methyl), 1L, 16L), substr(cibersort$Mixture, 1L, 16L))
+idx <- match(getTumorIDs(colnames(brca.methyl)), getTumorIDs(cibersort$Mixture))
 cibersort <- cibersort[idx[!is.na(idx)], ]
 cat("All current tumors are contained in the CIBERSORT results", 
-    isTRUE(all.equal(substr(cibersort$Mixture, 1L, 16L), substr(colnames(brca.methyl), 1L, 16L))),
+    isTRUE(all.equal(getTumorIDs(cibersort$Mixture), getTumorIDs(colnames(brca.methyl)))),
     "\n")
 cat("Dimensions of CIBERSORT results", dim(cibersort), "\n")
 ```
@@ -105,7 +107,7 @@ purity_breast <- purity_breast[, c("Sample.ID", "ESTIMATE", "ABSOLUTE", "LUMP", 
 rm(purity_all)
 
 # keep only the data for tumors used in the analysis
-idx <- match(substr(colnames(brca.methyl), 1L, 16L), purity_breast$Sample.ID)
+idx <- match(getTumorIDs(colnames(brca.methyl)), purity_breast$Sample.ID)
 cat("All current tumors are in the purity dataset", !any(is.na(idx)), "\n")
 purity_breast <- purity_breast[idx, ]
 ```
@@ -163,12 +165,12 @@ cat(" dimensions of brca.methyl  ", dim(brca.methyl), "\n",
     "dimensions of brca.seq     ", dim(brca.seq), "\n",
     "dimensions of cibersort    ", dim(cibersort), "\n",
     "dimensions of purity_breast", dim(purity_breast), "\n")
-cat("Names align:", isTRUE(all.equal(substr(colnames(brca.methyl), 1, 16),
-                                     substr(colnames(brca.seq), 1, 16))),
-    isTRUE(all.equal(substr(colnames(brca.methyl), 1, 16),
-                     substr(cibersort$Mixture, 1, 16))),
-    isTRUE(all.equal(substr(colnames(brca.methyl), 1, 16),
-                     substr(purity_breast$Sample.ID, 1, 16))), "\n")
+cat("Names align:", isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
+                                     getTumorIDs(colnames(brca.seq)))),
+    isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
+                     getTumorIDs(cibersort$Mixture))),
+    isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
+                     getTumorIDs(purity_breast$Sample.ID))), "\n")
 ```
 
 ```{r measured_s_beta}
@@ -293,13 +295,13 @@ lookup_lm22 <- lookup_lm22[, idx]
 cat("columns of cibersort align with lookup_lm22", 
     isTRUE(all.equal(colnames(cibersort)[2L:23L], colnames(lookup_lm22))), "\n")
 cat("tumor names of cibersort align with brca.methyl", 
-    isTRUE(all.equal(substr(cibersort$Mixture, 1L, 16L), 
-                     substr(colnames(brca.methyl), 1L, 16L))), "\n")
+    isTRUE(all.equal(getTumorIDs(cibersort$Mixture), 
+                     getTumorIDs(colnames(brca.methyl)))), "\n")
 
 # calculate beta_i^imp
 lm22_wgts <- matrix(0.0, nrow = nrow(brca.methyl), ncol = ncol(brca.methyl))
 for (i in 1L:ncol(brca.methyl)) {
-  tumor_index <- which(substr(cibersort$Mixture, 1L, 16L) == substr(colnames(brca.methyl)[i], 1L, 16L))
+  tumor_index <- which(getTumorIDs(cibersort$Mixture) == getTumorIDs(colnames(brca.methyl)[i]))
   cs_tumor <- cibersort[tumor_index, 2L:23L]
   lm22_wgts[, i] <- {lookup_lm22 %*% t(data.matrix(cs_tumor))} / cibersort$Absolute.score..sig.score.[tumor_index]
 }
@@ -404,14 +406,14 @@ print(immune_correlations)
 
 ```{r}
 # add purity information to cibersort result
-idx <- match(substr(cibersort$Mixture, 1, 16), purity_breast$Sample.ID)
+idx <- match(getTumorIDs(cibersort$Mixture), purity_breast$Sample.ID)
 cibersort <- cibersort[idx, ]
 cibersort$purity <- purity_breast$CPE
 cibersort$purity.bin <- purity_breast$CPE.bin
 
 # add c-beta estimates to cibersort result
 cat("cibersort tumor names align with c_beta names", 
-    all.equal(substr(cibersort$Mixture, 1, 16), substr(names(c_beta_measured), 1, 16)),
+    all.equal(getTumorIDs(cibersort$Mixture), getTumorIDs(names(c_beta_measured))),
     "\n")
 cibersort$c.beta.measured <- c_beta_measured
 cibersort$c.beta.adj1 <- c_beta_adj1
