@@ -105,18 +105,6 @@ cat("All current tumors are in the purity dataset:",
     isTRUE(all.equal(purity$Sample.ID, getTumorIDs(colnames(methyl_data)))), "\n")
 ```
 
-### Read CpG Sites
-
-```{r clock_set_data}
-# subset the methylation data to the clock set fCpGs
-cpg_sites <- read.csv(file.path(repo_dir, "3. Select fCpGs", "outputs",
-                                "NBL_Clock_CpGs.txt"),
-                      header = FALSE)[, 1L]
-
-methyl_data <- methyl_data[rownames(methyl_data) %in% cpg_sites, ]
-cat("Dimensions of current methylation data", dim(methyl_data), "\n")
-```
-
 ## Adjust $\beta$ Values {.tabset}
 
 #### Definition
