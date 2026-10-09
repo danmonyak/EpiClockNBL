@@ -189,7 +189,7 @@ From inside `1. Simulation`:
    sbatch job_scheduler_run_split.sh
    ```
 4. Move the two output directories, `90_sites_NB_split_base` and `90_sites_NB_split_splitOutputs`, into a new directory called `sim_data` inside `1. Simulation`.
-5. Open the notebook *Create Simulation Figures.ipynb* and run all cells. This recombines the data from the splits and creates the figures in `1. Simulation/figures`.
+5. Open the notebook *Create Simulation Figures.ipynb* and run all cells. This recombines the data from the splits and creates the figures.
 
 ### 2. TARGET Retrieval
 
@@ -354,6 +354,6 @@ Repeat steps a to c for each half of the split, with the following changes (show
 
 ## Outputs and re-running
 
-- Figures are saved to `figures_revision` in the repository, except the simulation figures, which are saved to `1. Simulation/figures`.
+- Figures are saved to `figures_revision` in the repository.
 - Downloaded and intermediate data is saved under *official_indir*/TARGET and *official_indir*/Henrich.
 - Several steps refuse to overwrite an existing output file if the new result differs from it, and raise an error instead. To regenerate such an output on purpose, delete the existing file first.
