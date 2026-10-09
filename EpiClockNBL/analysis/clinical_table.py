@@ -20,8 +20,7 @@ def pipeline():
             'race', 'sex_at_birth', 'ethnicity', 'vital_status'
         ],
         'Henrich': [
-            'age at diagnosis', 'inss stage', 'current risk category', 'mycn status',
-            '1p status', '11q status', '17q status'
+            'age at diagnosis', 'inss stage', 'current risk category', 'mycn status'
         ]
     }
     summary_num_features = {
