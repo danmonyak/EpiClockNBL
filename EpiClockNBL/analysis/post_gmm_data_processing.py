@@ -14,6 +14,9 @@ nbl_consts = nbl_util.consts
 proj_dir_TARGET = os.path.join(nbl_consts['official_indir'], 'TARGET')
 proj_dir_Henrich = os.path.join(nbl_consts['official_indir'], 'Henrich')
 
+# Tumors in the adjusted GMM results with any Rhat above this are not given a phi.adjusted value
+ADJUSTED_RHAT_THRESHOLD = 1.2
+
 def pipeline(verbose=True):
     
     if verbose:
@@ -61,6 +64,14 @@ def pipeline(verbose=True):
     # Purity-adjusted beta values
     gmm_results_target_adjusted = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'ADJUSTED.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_adjusted.index = gmm_results_target_adjusted.index.map(lambda x:x.replace('.', '-'))
+
+    # Remove tumors whose GMM fit did not converge (any Rhat above the threshold)
+    adjusted_Rhat = gmm_results_target_adjusted.loc[:, gmm_results_target_adjusted.columns.str.endswith('.Rhat')]
+    adjusted_not_converged = (adjusted_Rhat > ADJUSTED_RHAT_THRESHOLD).any(axis=1)
+    if verbose:
+        print(f'\nRemoving {adjusted_not_converged.sum()} tumors from the adjusted GMM results with Rhat > {ADJUSTED_RHAT_THRESHOLD}:')
+        print(adjusted_Rhat.loc[adjusted_not_converged].max(axis=1).to_string())
+    gmm_results_target_adjusted = gmm_results_target_adjusted.loc[~adjusted_not_converged]
 
     if verbose:
         print('DONE')
