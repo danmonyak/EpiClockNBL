@@ -45,7 +45,7 @@ repo_dir = root + os.path.join(*subdir_list)
 consts = json.loads(''.join(open(os.path.join(repo_dir, 'EpiClockNBL', 'consts.json'), 'r').readlines()))
 consts['repo_dir'] = repo_dir
 try:
-    config = json.loads(''.join(open(os.path.join(repo_dir, 'config.json'), 'r').readlines()))
+    config = json.load(open(os.path.join(repo_dir, 'config.json'), 'rb'))
 except FileNotFoundError:
     sys.exit('Please create config.json file in main directory of repository...')
 consts.update(config)
