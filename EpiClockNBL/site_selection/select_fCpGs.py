@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import seaborn as sns
 from scipy.stats import spearmanr
+from sklearn.cluster import KMeans
 import EpiClockNBL.util as nbl_util
 nbl_consts = nbl_util.consts
 from .util import clusteringWeights, getBinEdges
@@ -313,6 +315,116 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
 
     # Save figure
     fig.savefig(os.path.join(figure_outdir, 'pick_notStuck_sites.svg'), format='svg', pad_inches=0.1)
+    fig.show()
+
+    if verbose:
+        print('DONE')
+
+    ####################################################################################
+    ####################################################################################
+
+    # Plot clustering weight of each fluctuating site
+    if verbose:
+        print('\nGenerating figure...', end=' ')
+        time.sleep(1)
+
+    removed_sites = balanced_notStuck[~np.isin(balanced_notStuck, Clock_CpGs)]
+
+    # Highest clustering weight among the selected sites
+    weight_threshold = clustering_weights_ser.loc[Clock_CpGs].max()
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=figsize * sf)
+
+    binwidth = 0.005
+    sns.histplot(ax=ax,      # Clustering sites
+                x=clustering_weights_ser.loc[removed_sites],
+                color=nbl_consts['palette_jco'][0], alpha=nbl_consts['opacity'],
+                bins=getBinEdges(weight_threshold, clustering_weights_ser.max(), binwidth, hardStop=False)
+                )
+    sns.histplot(ax=ax,      # Non-clustering sites
+                x=clustering_weights_ser.loc[Clock_CpGs],
+                color=nbl_consts['palette_jco'][2], alpha=nbl_consts['opacity'],
+                bins=getBinEdges(clustering_weights_ser.min(), weight_threshold, binwidth, hardStop=True)
+                )
+
+    # Customize figure
+    ax.set_xlabel('Clustering weight', fontsize=nbl_consts['labelfontsize'] * sf)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=nbl_consts['labelfontsize'] * sf)
+    ax.set_title(f'Fluctuating CpGs (n = {len(balanced_notStuck):,})', fontsize=nbl_consts['labelfontsize'] * sf)
+    ax.tick_params(axis='both', labelsize=nbl_consts['ticksfontsize'] * sf, width=sf, length=8 * sf)
+
+    # Save figure
+    fig.savefig(os.path.join(figure_outdir, 'pick_nonClustering_sites.svg'), format='svg', pad_inches=0.1)
+    fig.show()
+
+    if verbose:
+        print('DONE')
+
+    ####################################################################################
+    ####################################################################################
+
+    # Plot heatmap of beta values of the most and least clustering sites
+    # Tumors are grouped by their K-means cluster
+    if verbose:
+        print('\nGenerating figure...', end=' ')
+        time.sleep(1)
+
+    n_sites_each = 50
+
+    # Same clustering as used in clusteringWeights
+    km = KMeans(n_clusters=4, random_state=0).fit(km_beta_values.T)
+    tumor_clusters = pd.Series(km.labels_, index=km_beta_values.columns)
+    tumor_order = tumor_clusters.sort_values(kind='stable').index
+    cluster_boundaries = np.cumsum(tumor_clusters.value_counts().sort_index().values)[:-1]
+
+    sorted_weights = clustering_weights_ser.sort_values()
+    site_groups = {
+        f'{n_sites_each} most clustering\nsites (removed)': sorted_weights.index[::-1][:n_sites_each],
+        f'{n_sites_each} least clustering\nsites (selected)': sorted_weights.index[:n_sites_each]
+    }
+    cluster_colors = [nbl_consts['palette_jco'][i] for i in [0, 1, 3, 2]]
+
+    # Create plot
+    # Rows: cluster color bar, most clustering sites, least clustering sites
+    # Columns: heatmaps, colorbar
+    fig, axes = plt.subplots(3, 2, figsize=figsize * [1.3, 1.2] * sf,
+                             gridspec_kw={'height_ratios':[0.05, 1, 1], 'width_ratios':[1, 0.03],
+                                          'hspace':0.06, 'wspace':0.04})
+
+    # Cluster color bar
+    ax = axes[0, 0]
+    ax.imshow([tumor_clusters.loc[tumor_order].values], aspect='auto', interpolation='none',
+              cmap=ListedColormap(cluster_colors), vmin=0, vmax=3)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title('Tumors, grouped by cluster', fontsize=nbl_consts['labelfontsize'] * sf)
+    axes[0, 1].axis('off')
+
+    # Heatmaps
+    for i, (label, sites) in enumerate(site_groups.items()):
+        ax = axes[i + 1, 0]
+        im = ax.imshow(km_beta_values.loc[sites, tumor_order].values, aspect='auto', interpolation='none',
+                       cmap='RdBu_r', vmin=0, vmax=1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_ylabel(label, fontsize=nbl_consts['labelfontsize'] * 0.8 * sf)
+
+        # Lines between clusters
+        for boundary in cluster_boundaries:
+            ax.axvline(boundary - 0.5, color='k', lw=sf)
+
+    # Colorbar spanning both heatmaps
+    gs = axes[1, 1].get_gridspec()
+    axes[1, 1].remove()
+    axes[2, 1].remove()
+    cbar = fig.colorbar(im, cax=fig.add_subplot(gs[1:, 1]))
+    cbar.set_label(r'Methylation ($\beta$)', fontsize=nbl_consts['labelfontsize'] * 0.8 * sf)
+    cbar.ax.tick_params(labelsize=nbl_consts['ticksfontsize'] * sf, width=sf, length=8 * sf)
+    cbar.outline.set_linewidth(sf)
+
+    # Save figure
+    fig.savefig(os.path.join(figure_outdir, 'clustering_heatmap.svg'), format='svg', pad_inches=0.1)
     fig.show()
 
     if verbose:
