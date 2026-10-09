@@ -215,6 +215,15 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     outfile_path = os.path.join(outdir, f'NBL.methyl.antiNonIterClustNotStuck_sites.tsv')
     beta_values_unbiased_sites.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
 
+    # Save purity-adjusted beta values of Clock sites
+    beta_values_adjusted = pd.read_table(
+        os.path.join(proj_dir, 'cohort1.analysis_tumors.methyl_adjusted.tsv'),
+        index_col=0
+    )
+    beta_values_adjusted = beta_values_adjusted.rename(columns=nbl_util.getSampleID)
+    outfile_path = os.path.join(outdir, f'NBL.methyl_adjusted.antiNonIterClustNotStuck_sites.tsv')
+    beta_values_adjusted.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
+
     if verbose:
         print('\nDONE')
     
