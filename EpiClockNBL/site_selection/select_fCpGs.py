@@ -347,7 +347,7 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
                 )
     sns.histplot(ax=ax,      # Non-clustering sites
                 x=clustering_weights_ser.loc[Clock_CpGs],
-                color=nbl_consts['palette_jco'][2], alpha=nbl_consts['opacity'],
+                color=nbl_consts['palette_jco'][6], alpha=nbl_consts['opacity'],
                 bins=getBinEdges(clustering_weights_ser.min(), weight_threshold, binwidth, hardStop=True)
                 )
 
