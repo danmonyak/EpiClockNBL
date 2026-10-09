@@ -151,7 +151,7 @@ Then, to retrieve the TCGA data and generate the HTML output, open *Data_Prep.Rm
 
 It could take up to a few hours to run, though it will likely take less than 1 hour. This script should be run on a machine of at least 16 GB of memory. If only 8 GB of memory is available, it can work but it will take a few hours and the computer should not be used for anything else at the same time.
 
-If on Windows, run the following in powershell in order to unlink the virtual *P* drive:
+After it's done, if the user is on Windows, run the following in powershell in order to unlink the virtual *P* drive:
 ```
 subst P: /D
 ```
@@ -166,7 +166,7 @@ Open the notebook Pipeline.ipynb inside "3. Select fCpGs" and run all cells.
 
 ### 4. Process Supplementary Data
 
-Open the notebook Pipeline.ipynb inside "3. Select fCpGs" and run all cells.
+Open the notebook Pipeline.ipynb inside "4. Process Supplementary Data" and run all cells.
 
 ### 5. Gaussian Mixture Model
 
@@ -187,18 +187,18 @@ For each cohort, the program will take a few hours to run, and you can check on 
 ### 6. Main Analysis
 
 #### **a. Data processing**
-After the GMM script has been run for both cohorts, open the notebook Pipeline.ipynb inside "6. Analysis" and run all cells.
+After the GMM script has been run for both cohorts, open the notebook Pipeline.ipynb inside "6. Main Analysis" and run all cells.
 
 #### **b. Tumor calendar age analysis**
-Open the notebook *Make Figures.ipynb* inside "6. Analysis" and run all cells.
+Open the notebook *Make Figures.ipynb* inside "6. Main Analysis" and run all cells.
 
 #### **c. Correlation and Miscellaneous Analysis**
 
-Open the notebook *Estimate Ages.ipynb* inside "6. Analysis" and run all cells.
+Open the notebook *Estimate Ages.ipynb* inside "6. Main Analysis" and run all cells.
 
 #### **d. Survival Analysis**
 
-1. Open *Analysis/NBL_survival.Rmd* file in Rstudio.
+1. Open *6. Main Analysis/NBL_survival.Rmd* file in Rstudio.
 2. Click *Knit*.
 
 ### 7. GSEA
