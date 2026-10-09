@@ -41,12 +41,10 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 
 ### Python packages
 
-- ipywidgets
 - matplotlib
 - numpy
 - openpyxl
 - pandas
-- plotly
 - scikit-learn
 - scipy
 - seaborn
