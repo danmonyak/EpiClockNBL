@@ -705,9 +705,15 @@ def writeWithoutOverwrite(filepath, data,
     if os.path.exists(filepath):
         existing_data = readFunc(filepath)
         if compareFunc:
-            comparison = compareFunc(data, existing_data)
+            try:
+                comparison = compareFunc(data, existing_data)
+            except ValueError:
+                comparison = False
         else:
-            comparison = np.all(data == existing_data)
+            try:
+                comparison = np.all(data == existing_data)
+            except ValueError:
+                comparison = False
         
         if not comparison:
             raise OverwriteError('Current output would overwrite alternative data...')
