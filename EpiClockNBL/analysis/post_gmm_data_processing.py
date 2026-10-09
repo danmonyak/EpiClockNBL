@@ -58,6 +58,10 @@ def pipeline(verbose=True):
     gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_sensitivity_split2.index = gmm_results_target_sensitivity_split2.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
 
+    # Purity-adjusted beta values
+    gmm_results_target_adjusted = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'ADJUSTED.TARGET.GMM_results.csv'), index_col=0)
+    gmm_results_target_adjusted.index = gmm_results_target_adjusted.index.map(lambda x:x.replace('.', '-'))
+
     if verbose:
         print('DONE')
 
@@ -76,6 +80,10 @@ def pipeline(verbose=True):
     # Sensitivity analysis
     clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_sensitivity_split1['phi.mean'].rename('phi.split1'), left_on='sampleID', right_index=True, validate="one_to_one")
     clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_sensitivity_split2['phi.mean'].rename('phi.split2'), left_on='sampleID', right_index=True, validate="one_to_one")
+
+    # Purity-adjusted beta values
+    # Only available for tumors with gene expression data, so keep all tumors (left merge)
+    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_adjusted['phi.mean'].rename('phi.adjusted'), left_on='sampleID', right_index=True, how='left', validate="one_to_one")
 
     if verbose:
         print('DONE')
