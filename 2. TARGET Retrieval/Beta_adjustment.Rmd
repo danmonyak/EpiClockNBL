@@ -141,8 +141,8 @@ in the $l^{th}$ cell-type taken from the WBC lookup table.
 #### Beta Value Lookup
 
 ```{r read_wbc_xlsx}
-# the lookup table is in official_indir itself
-lookup <- readxl::read_excel(file.path(official_indir, params$lookup_filename))
+# the lookup table is in the "Other" directory of official_indir
+lookup <- readxl::read_excel(file.path(official_indir, "Other", params$lookup_filename))
 
 # keep only the CpG sites of interest
 idx <- match(rownames(methyl_data), lookup$ID_REF)
