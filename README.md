@@ -226,7 +226,19 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
    Rscript Save_Cibersort_Input.R
    ```
    This saves the TPM gene expression data as *cohort1.analysis_tumors.rnaseq_tpm.tsv* in *official_indir*/TARGET, restricted to the tumors in the analysis cohort that have gene expression data. On Windows, the virtual `P:` drive from step 2a must still be linked.
-2. Upload *cohort1.analysis_tumors.rnaseq_tpm.tsv* to [CIBERSORTx](https://cibersortx.stanford.edu/) as the mixture file and run it with the LM22 signature matrix, B-mode batch correction, absolute mode and 500 permutations.
+2. Upload *cohort1.analysis_tumors.rnaseq_tpm.tsv* to [CIBERSORTx](https://cibersortx.stanford.edu/) as the mixture file. The website renames it slightly on upload, to *cohort1-analysis_tumors-rnaseq_tpm.tsv*. Run a job with the following parameters:
+
+   | Parameter | Value |
+   |---|---|
+   | Job type | Impute Cell Fractions |
+   | Signature matrix file | LM22.update-gene-symbols.txt |
+   | Mixture file | cohort1-analysis_tumors-rnaseq_tpm.tsv |
+   | Batch correction | enabled |
+   | Batch correction mode | B-mode |
+   | Disable quantile normalization | true |
+   | Run mode (relative or absolute) | absolute |
+   | Permutations | 500 |
+
 3. Save the results as *Cibersort_LM22_500perm_Analysis_Tumors.csv* in *official_indir*/TARGET.
 4. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
    ```

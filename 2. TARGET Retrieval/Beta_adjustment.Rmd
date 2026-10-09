@@ -102,8 +102,8 @@ cat("Dimensions of current RNAseq data", dim(brca.seq), "\n")
 #### Read CIBERSORTx Results
 
 The CIBERSORT analysis was completed for the tumors in the analysis cohort with
-bulk RNA data using the LM22 signature, LM22 B-mode batch correction, and 500
-permutations.
+bulk RNA data using the LM22 signature, B-mode batch correction, absolute
+mode, quantile normalization disabled, and 500 permutations.
 
 ```{r cibersor_read}
 idx <- match(getTumorIDs(colnames(brca.methyl)), getTumorIDs(cibersort$Mixture))
