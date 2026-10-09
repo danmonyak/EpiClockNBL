@@ -9,6 +9,7 @@ params:
   save_path: "TARGET"
   methyl_filename: "cohort1.methyl"
   gene_filename: "cohort1.rnaseq"
+  processed_clinical_filename: "clinical.processed.tsv"
   purity_filename: "csv file containing purity estimates"
   lookup_filename: "xlsx file containing CpG site specific beta values from WB"
   cibersort_filename: "Cibersort_LM22_500perm_All_Tumors.csv"
@@ -55,6 +56,30 @@ brca.methyl <- tryCatch(readRDS(file.path(save_path,
 cat("Dimensions of raw methylation data", dim(brca.methyl), "\n")
 ```
 
+### Restrict to Analysis Tumors
+
+We keep only the tumors in the analysis cohort that have bulk RNA data, which
+are the tumors included in the CIBERSORT analysis.
+
+```{r restrict_to_analysis_tumors}
+clinical <- read.table(file.path(save_path, 
+                                 params$processed_clinical_filename), 
+                       sep = "\t", header = TRUE)
+clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
+analysis_tumors <- clinical$sampleID[clinical$in_analysis_dataset]
+
+cibersort <- read.csv(file.path(save_path, 
+                                params$cibersort_filename))
+
+methyl_tumors <- getTumorIDs(colnames(brca.methyl))
+keep <- methyl_tumors %in% analysis_tumors & 
+  methyl_tumors %in% getTumorIDs(cibersort$Mixture)
+brca.methyl <- brca.methyl[, keep]
+
+cat("Tumors in the analysis cohort", length(analysis_tumors), "\n")
+cat("Dimensions of current methylation data", dim(brca.methyl), "\n")
+```
+
 
 ### Read Bulk RNA Data
 
@@ -77,12 +102,10 @@ cat("Dimensions of current RNAseq data", dim(brca.seq), "\n")
 
 #### Read CIBERSORTx Results
 
-The CIBERSORT analysis was completed for all tumors using the LM22 signature, 
-LM22 B-mode batch correction, and 500 permutations.
+The CIBERSORT analysis was completed for all tumors with bulk RNA data using 
+the LM22 signature, LM22 B-mode batch correction, and 500 permutations.
 
 ```{r cibersor_read}
-cibersort <- read.csv(file.path(save_path, 
-                                params$cibersort_filename))
 idx <- match(getTumorIDs(colnames(brca.methyl)), getTumorIDs(cibersort$Mixture))
 cibersort <- cibersort[idx[!is.na(idx)], ]
 cat("All current tumors are contained in the CIBERSORT results", 
