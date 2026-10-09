@@ -58,7 +58,7 @@ def pipeline():
     def replaceFeatures(feat_name):
         return replace_features_dict.get(feat_name, feat_name.replace('_', ' ').capitalize())
     def featNameRow(feat_name):
-        return [replaceFeatures(feat_name), '', '']
+        return [replaceFeatures(feat_name), '']
     def featCountRows(ser):
         counts_df = ser.value_counts(dropna=False).to_frame()
         col_name = counts_df.index.name
@@ -72,8 +72,8 @@ def pipeline():
         
         pct_float = (counts_df['count'] / counts_df['count'].sum() * 100)
         pct_str = pct_float.apply(formatValue)
-        counts_df['pct'] = pct_str
-        counts_df['count'] = counts_df['count'].astype(str)
+        # Number and percentage together: N (XX%)
+        counts_df['count'] = counts_df['count'].astype(str) + ' (' + pct_str + '%)'
         return counts_df.rename(index=lambda x:capFirstLetter(str(x))).rename(index=lambda x:'Missing' if x.lower()=='nan' else x).rename(index=lambda x:' '*20 + x).reset_index().values.tolist()
     def formatValue(x):
         if x < 1:
@@ -96,7 +96,7 @@ def pipeline():
         
         table_text_list = []
         table_text_list.append(
-            ['Patients', clinical_tbl.shape[0], '100']
+            ['Patients', f'{clinical_tbl.shape[0]} (100%)']
         )
         for num_feat in summary_num_features[cohort]:
             table_text_list.append(featNameRow(num_feat))
@@ -108,5 +108,5 @@ def pipeline():
             except:
                 print(cat_feat)
                 raise
-        pd.DataFrame(data=table_text_list, columns=['Characteristic', 'Number', '%'],
+        pd.DataFrame(data=table_text_list, columns=['Characteristic', 'Value'],
                     ).to_excel(f'{cohort}_patient_characteristics.xlsx', index=False)
