@@ -11,7 +11,6 @@ params:
   gene_filename: "cohort1.rnaseq"
   purity_filename: "csv file containing purity estimates"
   lookup_filename: "xlsx file containing CpG site specific beta values from WB"
-  cpg_filename: "csv file containing clock set fCpG"
   cibersort_filename: "Cibersort_LM22_500perm_All_Tumors.csv"
 editor_options: 
   markdown: 
@@ -27,11 +26,7 @@ library(jsonlite)
 
 consts <- read_json(file.path(repo_dir, 'config.json'))
 
-if (consts[["Windows"]]) {
-  save_path <- file.path("P:", params$save_path)
-} else {
-  save_path <- file.path(consts[['official_indir']], params$save_path)
-}
+save_path <- file.path(consts[['official_indir']], params$save_path)
 
 gg_theme <- theme(panel.grid.major = element_blank(), 
                   panel.grid.minor = element_blank(),
@@ -114,8 +109,8 @@ purity_breast <- purity_breast[idx, ]
 ### Read CpG Sites
 
 ```{r clock_set_data}
-cpg_sites <- read.csv(file.path(save_path, 
-                                params$cpg_filename),
+cpg_sites <- read.csv(file.path(repo_dir, "3. Select fCpGs", "outputs", 
+                                "NBL_Clock_CpGs.txt"),
                       header = FALSE)[, 1L]
 ```
 
