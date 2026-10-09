@@ -36,7 +36,7 @@ cat("Tumors in the analysis cohort with gene expression data:", sum(keep & is_tu
 
 tpm <- tpm[, keep]
 
-outfile_path <- file.path(save_path, paste0(gene_filename, "_tpm.tsv"))
+outfile_path <- file.path(save_path, "cohort1.analysis_tumors.rnaseq_tpm.tsv")
 write.table(tpm, file = outfile_path,
             sep = "\t", quote = F, row.names = F)
 cat("Saved", outfile_path, "\n")
