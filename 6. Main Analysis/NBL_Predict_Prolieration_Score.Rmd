@@ -62,6 +62,9 @@ promoter_cpgs <- anno_sub[
   anno_sub$Relation_to_Island %in% c("Island", "N_Shore", "S_Shore") &
     grepl("TSS1500|TSS200|5'UTR|1stExon", anno_sub$UCSC_RefGene_Group),
 ]
+
+Clock_fCpGs <- read.table(file.path(repo_dir, "3. Select fCpGs", "outputs", "NBL_Clock_CpGs.txt"))$V1
+# intersect(rownames(promoter_cpgs), Clock_fCpGs)
 ```
 
 CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore).
