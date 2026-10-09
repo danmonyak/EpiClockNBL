@@ -90,8 +90,8 @@ def pipeline():
     #                                                                     clinical['TARGET'].loc[clinical['TARGET']['primary_diagnosis'] == 'Ganglioneuroblastoma'],
     #                                                                     clinical['TARGET'].loc[clinical['TARGET']['LUMP'] >= 0.7]
     #                                                                     ]):
-    # Output file name prefix and cohort of each table
-    for name, cohort in [('all', 'TARGET'), ('Henrich', 'Henrich')]:
+    # Create a table for each cohort
+    for cohort in ['TARGET', 'Henrich']:
         clinical_tbl = clinical[cohort]
         
         table_text_list = []
@@ -109,4 +109,4 @@ def pipeline():
                 print(cat_feat)
                 raise
         pd.DataFrame(data=table_text_list, columns=['Characteristic', 'Number', '%'],
-                    ).to_excel(f'{name}_patient_characteristics.xlsx', index=False)
+                    ).to_excel(f'{cohort}_patient_characteristics.xlsx', index=False)
