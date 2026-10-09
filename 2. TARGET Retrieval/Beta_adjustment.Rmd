@@ -1,27 +1,26 @@
 ---
-title: "Purity Adjustment and CIBERSORT"
+title: "Purity Adjustment"
 author: "Shannon T. Holloway"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
+output:
   html_document:
     code_folding: "hide"
 params:
   save_path: "TARGET"
   methyl_filename: "cohort1.methyl"
-  gene_filename: "cohort1.rnaseq"
   processed_clinical_filename: "clinical.processed.tsv"
-  lookup_filename: "xlsx file containing CpG site specific beta values from WB"
+  lookup_filename: "GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
-editor_options: 
-  markdown: 
+  restrict_to_clock_sites: true
+  output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
+editor_options:
+  markdown:
     wrap: 72
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = NA)
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
+library(readxl)
 library(jsonlite)
 
 source('util.R')
@@ -33,26 +32,21 @@ if (consts[["Windows"]]) {
 } else {
   save_path <- file.path(consts[['official_indir']], params$save_path)
 }
-
-gg_theme <- theme(panel.grid.major = element_blank(), 
-                  panel.grid.minor = element_blank(),
-                  panel.background = element_blank(), 
-                  axis.line = element_line(colour = "black"))
 ```
 
 #  {.tabset}
 
 ## Data {.tabset}
 
-### Read TCGA Methylation Data
+### Read TARGET Methylation Data
 
 ```{r read_methylation_from_gdc}
-brca.methyl <- tryCatch(readRDS(file.path(save_path, 
+methyl_data <- tryCatch(readRDS(file.path(save_path,
                                           paste0(params$methyl_filename, ".rds"))),
                         error = function(e) {
                           stop("must recreate the tumor methylation object")
                           })
-cat("Dimensions of raw methylation data", dim(brca.methyl), "\n")
+cat("Dimensions of raw methylation data", dim(methyl_data), "\n")
 ```
 
 ### Restrict to Analysis Tumors
@@ -61,55 +55,35 @@ We keep only the tumors in the analysis cohort that have bulk RNA data, which
 are the tumors included in the CIBERSORT analysis.
 
 ```{r restrict_to_analysis_tumors}
-clinical <- read.table(file.path(save_path, 
-                                 params$processed_clinical_filename), 
+clinical <- read.table(file.path(save_path,
+                                 params$processed_clinical_filename),
                        sep = "\t", header = TRUE)
 clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
 analysis_tumors <- clinical$sampleID[clinical$in_analysis_dataset]
 
-cibersort <- read.csv(file.path(save_path, 
+cibersort <- read.csv(file.path(save_path,
                                 params$cibersort_filename))
 
-methyl_tumors <- getTumorIDs(colnames(brca.methyl))
-keep <- methyl_tumors %in% analysis_tumors & 
+methyl_tumors <- getTumorIDs(colnames(methyl_data))
+keep <- methyl_tumors %in% analysis_tumors &
   methyl_tumors %in% getTumorIDs(cibersort$Mixture)
-brca.methyl <- brca.methyl[, keep]
+methyl_data <- methyl_data[, keep]
 
 cat("Tumors in the analysis cohort", length(analysis_tumors), "\n")
-cat("Dimensions of current methylation data", dim(brca.methyl), "\n")
+cat("Dimensions of current methylation data", dim(methyl_data), "\n")
 ```
 
-
-### Read Bulk RNA Data
-
-```{r read_rna_from_gdc}
-brca.seq <- readRDS(file.path(save_path, 
-                              paste0(params$gene_filename, "_raw_counts.rds")))
-cat("Dimensions of raw RNAseq data", dim(brca.seq), "\n")
-
-brca.seq_ensembl <- brca.seq$gene_id
-brca.seq_gene.name <- brca.seq$gene_name
-
-idx <- match(getTumorIDs(colnames(brca.methyl)),
-             getTumorIDs(colnames(brca.seq)))
-if (any(is.na(idx))) stop("something went wrong in RNA data!")
-brca.seq <- brca.seq[, idx]
-brca.seq <- data.matrix(brca.seq)
-
-cat("Dimensions of current RNAseq data", dim(brca.seq), "\n")
-```
-
-#### Read CIBERSORTx Results
+### Read CIBERSORTx Results
 
 The CIBERSORT analysis was completed for the tumors in the analysis cohort with
 bulk RNA data using the LM22 signature, B-mode batch correction, absolute
 mode, quantile normalization disabled, and 500 permutations.
 
-```{r cibersor_read}
-idx <- match(getTumorIDs(colnames(brca.methyl)), getTumorIDs(cibersort$Mixture))
+```{r cibersort_read}
+idx <- match(getTumorIDs(colnames(methyl_data)), getTumorIDs(cibersort$Mixture))
 cibersort <- cibersort[idx[!is.na(idx)], ]
-cat("All current tumors are contained in the CIBERSORT results", 
-    isTRUE(all.equal(getTumorIDs(cibersort$Mixture), getTumorIDs(colnames(brca.methyl)))),
+cat("All current tumors are contained in the CIBERSORT results",
+    isTRUE(all.equal(getTumorIDs(cibersort$Mixture), getTumorIDs(colnames(methyl_data)))),
     "\n")
 cat("Dimensions of CIBERSORT results", dim(cibersort), "\n")
 ```
@@ -123,105 +97,28 @@ Systematic pan-cancer analysis of tumor purity. Nature Communications,
 
 ```{r read_purity}
 # keep only the data for tumors used in the analysis
-idx <- match(getTumorIDs(colnames(brca.methyl)), clinical$sampleID)
-cat("All current tumors are in the clinical table", !any(is.na(idx)), "\n")
+idx <- match(getTumorIDs(colnames(methyl_data)), clinical$sampleID)
 purity <- data.frame("Sample.ID" = clinical$sampleID[idx],
                      "LUMP" = clinical$LUMP[idx])
+cat("Dimensions of purity results", dim(purity), "\n")
+
+cat("All current tumors are in the purity dataset:",
+    isTRUE(all.equal(purity$Sample.ID, getTumorIDs(colnames(methyl_data)))), "\n")
 ```
 
 ### Read CpG Sites
 
-```{r clock_set_data}
-cpg_sites <- read.csv(file.path(repo_dir, "3. Select fCpGs", "outputs", 
+```{r clock_set_data, eval=params$restrict_to_clock_sites}
+# subset the methylation data to the clock set fCpGs
+cpg_sites <- read.csv(file.path(repo_dir, "3. Select fCpGs", "outputs",
                                 "NBL_Clock_CpGs.txt"),
                       header = FALSE)[, 1L]
+
+methyl_data <- methyl_data[rownames(methyl_data) %in% cpg_sites, ]
+cat("Dimensions of current methylation data", dim(methyl_data), "\n")
 ```
 
-We subset the methylation data to only the CpG sites of interest
-
-```{r limit_cpg_site}
-brca.methyl <- brca.methyl[rownames(brca.methyl) %in% cpg_sites, ]
-cat("Dimensions of current methylation data", dim(brca.methyl), "\n")
-```
-
-## Methylation Parameters {.tabset}
-
-### Intro
-
-The methylation parameters we consider here are calculated from:
-
--   the measured $\beta$ ($c_{\beta}$),
--   the "model 1" purity adjusted $\beta$ ($c_{{\widehat{\beta}}}^{\alpha}$)
-
-### Measured ($c_{\beta}$) {.tabset}
-
-#### Definition
-
-The methylation parameter for tumor $i$, $s_{\beta, i}$, is the standard
-deviation of the $\beta$-values of the selected CpG sites.
-
-$$
-s^2_{\beta,i} = \frac{1}{(n_{CPG}-1)} \sum_{j = 1}^{500} (\beta_{j,i} - \mu_{\beta,i})^2 \mathrm{I}[!\mathrm{is.na}(\beta_{j,i})],
-$$ where
-$\mu_{\beta,i} = \frac{1}{n_{CPG}}\sum_{j=1}^{500} \beta_{j,i} \mathrm{I}[!\mathrm{is.na}(\beta_{j,i})]$
-and
-$n_{CPG} = \sum_{j=1}^{500} \mathrm{I}[!\mathrm{is.na}(\beta_{j,i})]$.
-
-We remove tumors with $> 5\%$ missing values
-(`r sum(colMeans(is.na(brca.methyl)) > 0.05)` tumors)
-
-```{r remove_missing_data}
-too_many_na_values <- colMeans(is.na(brca.methyl)) >= 0.05
-
-brca.methyl <- brca.methyl[, !too_many_na_values]
-brca.seq <- brca.seq[, !too_many_na_values]
-cibersort <- cibersort[!too_many_na_values, ]
-purity <- purity[!too_many_na_values, ]
-purity$LUMP.bin <- cut(purity$LUMP, breaks = seq(0.7, 1.0, 0.1), include.lowest = TRUE)
-cat(" dimensions of brca.methyl  ", dim(brca.methyl), "\n",
-    "dimensions of brca.seq     ", dim(brca.seq), "\n",
-    "dimensions of cibersort    ", dim(cibersort), "\n",
-    "dimensions of purity       ", dim(purity), "\n")
-cat("Names align:", isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
-                                     getTumorIDs(colnames(brca.seq)))),
-    isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
-                     getTumorIDs(cibersort$Mixture))),
-    isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
-                     getTumorIDs(purity$Sample.ID))), "\n")
-```
-
-```{r measured_s_beta}
-s_beta_measured <- apply(brca.methyl, 2L, sd, na.rm = TRUE)
-c_beta_measured <- 1.0 - s_beta_measured
-data_measured <- data.frame("purity" = purity$LUMP,
-                            "purity.bin" = purity$LUMP.bin,
-                            "c_beta" = c_beta_measured,
-                            "model" = rep("measured", length(c_beta_measured)))
-
-data_models <- data_measured
-```
-
-#### Correlation with purity
-
-```{r echo = FALSE}
-data_measured <- data.frame("purity" = purity$LUMP,
-                            "purity.bin" = purity$LUMP.bin,
-                            "c_beta" = c_beta_measured,
-                            "model" = rep("measured", length(c_beta_measured)))
-
-data_models <- data_measured
-
-gg <- ggplot(data = data_models, aes(c_beta_measured, purity)) +
-  geom_point() +
-  geom_smooth(formula = y ~ x, method = "lm") +
-  ggpubr::stat_cor() +
-  gg_theme +
-  ggtitle(expression("Measured c"[beta] ~ "vs LUMP")) +
-  xlab(expression("Measured c"[beta])) + ylab("LUMP")
-print(gg)
-```
-
-### Model ($c_{{\widehat{\beta}}}^{\alpha})$ {.tabset}
+## Adjust $\beta$ Values {.tabset}
 
 #### Definition
 
@@ -231,8 +128,8 @@ $$
 \beta_{k}^{t} = \frac{1}{p}\left[\beta_{k}^{m} - (1 - p) ~ \beta^{imp}_{k}\right],
 $$
 
-where, as before, $p$ is the tumor purity, $\beta_{k}^{m}$ is the
-measured beta value at CpG site $k$. In this adjustment, so estimate
+where $p$ is the tumor purity, $\beta_{k}^{m}$ is the
+measured beta value at CpG site $k$. In this adjustment, we estimate
 $\beta_{k}^{imp}$ as
 
 $$
@@ -247,31 +144,32 @@ in the $l^{th}$ cell-type taken from the WBC lookup table.
 ```{r read_wbc_xlsx}
 lookup <- readxl::read_excel(file.path(save_path, params$lookup_filename))
 
-# keep only the 500 CpG sites of interest
-idx <- match(rownames(brca.methyl), lookup$ID_REF)
+# keep only the CpG sites of interest
+idx <- match(rownames(methyl_data), lookup$ID_REF)
 if (any(is.na(idx))) stop("CpG sites don't match up")
 
 lookup <- lookup[idx, ]
-cat("All selected fCpG sites are present", 
-    isTRUE(all.equal(lookup$ID_REF, rownames(brca.methyl))), "\n")
+cat("All selected CpG sites are present",
+    isTRUE(all.equal(lookup$ID_REF, rownames(methyl_data))), "\n")
 ```
 
 Manipulate these results into the structure of CIBERSORTx.
 
 ```{r convert_table_to_LM22}
-B.cells <- c("B.cells.memory", "Plasma.cells", 
+B.cells <- c("B.cells.memory", "Plasma.cells",
              "B.cells.naive")
-Macro <- c("Macrophages.M2", "Macrophages.M0", 
-           "Dendritic.cells.activated", "Monocytes", 
+Macro <- c("Macrophages.M2", "Macrophages.M0",
+           "Dendritic.cells.activated", "Monocytes",
            "Macrophages.M1", "Dendritic.cells.resting")
 Mast <- c("Eosinophils", "Mast.cells.activated", "Mast.cells.resting")
 Myeloid <- c("Neutrophils")
 NK <- c("NK.cells.resting", "NK.cells.activated")
 T.CD8.cells <- c("T.cells.gamma.delta", "T.cells.CD8")
-T.CD4.cells <- c("T.cells.follicular.helper", "T.cells.CD4.naive", 
-                 "T.cells.regulatory..Tregs.", "T.cells.CD4.memory.activated", 
+T.CD4.cells <- c("T.cells.follicular.helper", "T.cells.CD4.naive",
+                 "T.cells.regulatory..Tregs.", "T.cells.CD4.memory.activated",
                  "T.cells.CD4.memory.resting")
 
+# align these with the headers from the WBC datafile
 grouping_to_wbc <- list("CD4+ T cells" = T.CD4.cells,
                         "CD8+ T cells" = T.CD8.cells,
                         "CD14+ Monocytes" = Macro,
@@ -279,11 +177,13 @@ grouping_to_wbc <- list("CD4+ T cells" = T.CD4.cells,
                         "CD56+ NK cells" = NK,
                         "Eosinophils" = Mast,
                         "Neutrophils" = Myeloid)
-cat("All cell types are present in lookup", 
+cat("All cell types are present in lookup",
     all(names(grouping_to_wbc) %in% colnames(lookup)), "\n")
+cat("All cell types are present in cibersort",
+    all(unlist(grouping_to_wbc) %in% colnames(cibersort)), "\n")
 
 idx <- sapply(seq_along(grouping_to_wbc),
-              function(i) rep(names(grouping_to_wbc)[i], 
+              function(i) rep(names(grouping_to_wbc)[i],
                               length(grouping_to_wbc[[i]]))) |> unlist()
 lookup_lm22 <- lookup[, idx]
 colnames(lookup_lm22) <- unlist(grouping_to_wbc)
@@ -303,254 +203,37 @@ cat("This realignment worked:", all(tst), "\n")
 
 #### Calculate site specific beta values
 
-```{r}
+```{r calculate_weight}
+# align the cell type columns
 idx <- match(colnames(cibersort[, 2L:23L]), colnames(lookup_lm22))
 if (any(is.na(idx))) stop("cell types do not match")
 
 # reorder lookup table to match ordering of cibersort results
 lookup_lm22 <- lookup_lm22[, idx]
-cat("columns of cibersort align with lookup_lm22", 
+cat("columns of cibersort align with lookup_lm22",
     isTRUE(all.equal(colnames(cibersort)[2L:23L], colnames(lookup_lm22))), "\n")
-cat("tumor names of cibersort align with brca.methyl", 
-    isTRUE(all.equal(getTumorIDs(cibersort$Mixture), 
-                     getTumorIDs(colnames(brca.methyl)))), "\n")
+cat("tumor names of cibersort align with methyl_data",
+    isTRUE(all.equal(getTumorIDs(cibersort$Mixture),
+                     getTumorIDs(colnames(methyl_data)))), "\n")
 
 # calculate beta_i^imp
-lm22_wgts <- matrix(0.0, nrow = nrow(brca.methyl), ncol = ncol(brca.methyl))
-for (i in 1L:ncol(brca.methyl)) {
-  tumor_index <- which(getTumorIDs(cibersort$Mixture) == getTumorIDs(colnames(brca.methyl)[i]))
+lm22_wgts <- matrix(0.0, nrow = nrow(methyl_data), ncol = ncol(methyl_data))
+for (i in 1L:ncol(methyl_data)) {
+  tumor_index <- which(getTumorIDs(cibersort$Mixture) == getTumorIDs(colnames(methyl_data)[i]))
   cs_tumor <- cibersort[tumor_index, 2L:23L]
   lm22_wgts[, i] <- {lookup_lm22 %*% t(data.matrix(cs_tumor))} / cibersort$Absolute.score..sig.score.[tumor_index]
 }
 ```
 
-```{r}
-beta_adj1_tumor <- {{t(brca.methyl) - t(lm22_wgts) * {1.0 - purity$LUMP}} / purity$LUMP} |> t()
+```{r generate_and_save}
+beta_adj1_tumor <- {{t(methyl_data) - t(lm22_wgts) * {1.0 - purity$LUMP}} / purity$LUMP} |> t()
 
 cat("This adjustment results in ", mean(beta_adj1_tumor < 0.0 | beta_adj1_tumor > 1.0, na.rm = TRUE)*100,
     "% of the non-NA beta values outside of [0, 1]; we truncate these.\n")
 # truncation to physical values
 beta_adj1_tumor <- pmin(pmax(beta_adj1_tumor, 0.0), 1.0)
 
-s_beta_adj1 <- apply(beta_adj1_tumor, 2L, sd, na.rm = TRUE)
-c_beta_adj1 <- 1.0 - s_beta_adj1
-
-data_adj1 <- data.frame("purity" = purity$LUMP,
-                        "purity.bin" = purity$LUMP.bin,
-                        "c_beta" = c_beta_adj1,
-                        "model" = rep("adj1", length(c_beta_adj1)))
-data_models <- rbind(data_models,
-                     data_adj1)
+write.table(beta_adj1_tumor,
+            file = file.path(save_path, params$output_filename),
+            sep = "\t")
 ```
-
-#### Correlation with purity and previous estimators
-
-The Pearson Correlation coefficient with
-
-```{r}
-cor(cbind("measured" = c_beta_measured,
-          "purity_adjusted" = c_beta_adj1,
-          "Purity" = purity$LUMP))
-```
-
-```{r echo = FALSE}
-gg <- ggplot(data = data_adj1, aes(purity, c_beta)) +
-  geom_point() +
-  geom_smooth(formula = y ~ x, method = "lm") +
-  ggpubr::stat_cor() +
-  gg_theme +
-  xlab(expression("Purity-adjusted c"[beta]^alpha)) +
-  ylab("LUMP")
-print(gg)
-
-data_c_beta <- data.frame("purity" = data_measured$purity,
-                          "purity.bin" = data_measured$purity.bin,
-                          "measured" = data_measured$c_beta,
-                          "adj1" = data_adj1$c_beta)
-gg <- ggplot(data = data_c_beta, aes(measured, adj1)) +
-  geom_point(aes(color = purity.bin)) +
-  geom_smooth(formula = y ~ x, method = "lm") +
-  ggpubr::stat_cor() +
-  gg_theme +
-  ylab(expression("Purity-adjusted c"[beta]^alpha)) +
-  xlab(expression("Measured c"[beta])) +
-  geom_line(aes(measured, measured))
-print(gg)
-```
-
-The black line is $c_{\beta}$ vs $c_{\beta}$ showing that this
-adjustment shifts all $c_{\beta}$ to lower values.
-
-```{r}
-summary(c_beta_measured - c_beta_adj1)
-```
-
-## Gene Expressions {.tabset}
-
-### Pearson Correlations {.tabset}
-
-#### Immune Specific Genes
-
-Note that genes with all 0's have been removed.
-
-```{r echo = FALSE}
-#there are some zero rows
-tst <- rowSums(brca.seq) <= 0.0
-brca.seq <- brca.seq[!tst, ]
-brca.seq_ensembl <- brca.seq_ensembl[!tst]
-brca.seq_gene.name <- brca.seq_gene.name[!tst]
-
-genes_of_interest <- c("CD3D", "CD3E", "CD3G", 
-                       "CD4", "CD68", "CD8A", 
-                       "CD8B", "FOXP3", "MS4A1", 
-                       "NCAM1", "PTPRC")
-idx_genes <- match(genes_of_interest, brca.seq_gene.name)
-
-# Calculate Pearson Correlation
-result_pearson <- apply(brca.seq[idx_genes, ], MARGIN = 1L, FUN = cor, 
-                        y = cbind(c_beta_measured, c_beta_adj1)) |> t()
-```
-
-```{r}
-immune_correlations <- cbind(brca.seq_gene.name[idx_genes], result_pearson)
-colnames(immune_correlations) <- c("Gene Name", "Measured", "Adj1")
-rownames(immune_correlations) <- NULL
-immune_correlations <- as.data.frame(immune_correlations)
-print(immune_correlations)
-```
-
-### CIBERSORT {.tabset}
-
-```{r}
-# add purity information to cibersort result
-idx <- match(getTumorIDs(cibersort$Mixture), purity$Sample.ID)
-cibersort <- cibersort[idx, ]
-cibersort$purity <- purity$LUMP
-cibersort$purity.bin <- purity$LUMP.bin
-
-# add c-beta estimates to cibersort result
-cat("cibersort tumor names align with c_beta names", 
-    all.equal(getTumorIDs(cibersort$Mixture), getTumorIDs(names(c_beta_measured))),
-    "\n")
-cibersort$c.beta.measured <- c_beta_measured
-cibersort$c.beta.adj1 <- c_beta_adj1
-```
-
-#### Absolute Score
-
-```{r plot_absolute_score}
-absolute_score_figure <- function(data, x, xname) {
-  
-  label <- parse(text = paste('"', xname))
-  gg <- ggplot(data = subset(data, !is.na(data[[x]])),
-               aes(.data[[x]], .data$Absolute.score..sig.score.)) +
-    geom_point() +
-    geom_smooth(method = "lm", formula = y ~ x, color = "blue") +
-    ggpubr::stat_cor() +
-    gg_theme +
-    ylab("Absolute score") + xlab(label)
-  
-  print(gg)
-}
-```
-
-```{r Absolute_score_vs_purity}
-table(cibersort$purity.bin, useNA = "ifany")
-absolute_score_figure(data = cibersort, x = "purity", xname = 'LUMP"')
-```
-
-```{r Absolute_score_vs_Measured}
-cibersort$c.beta.measured.bin <- cut(cibersort$c.beta.measured, 
-                                     breaks = seq(0.65, 0.9, 0.05),
-                                     include.lowest = TRUE)
-table(cibersort$c.beta.measured.bin, useNA = "ifany")
-absolute_score_figure(data = cibersort, x = "c.beta.measured", xname = 'Measured c"[beta]')
-```
-
-```{r Absolute_score_vs_Adj1}
-cibersort$c.beta.adj1.bin <- cut(cibersort$c.beta.adj1, 
-                                 breaks = seq(0.65, 0.85, 0.05),
-                                 include.lowest = TRUE)
-table(cibersort$c.beta.adj1.bin, useNA = "ifany")
-absolute_score_figure(data = cibersort, x = "c.beta.adj1", xname = 'Purity-adjusted c"[beta]^alpha')
-```
-
-#### Cell Fractions
-
-```{r}
-metrics <- c("purity", "c.beta.measured", "c.beta.adj1")
-all_correlations <- apply(cibersort[, metrics],
-                          2L, 
-                          function(cbeta) {
-                            apply(cibersort[, 2L:23L] / cibersort$Absolute.score..sig.score.,
-                                  2L, 
-                                  function(x, y) {cor.test(x, y)$estimate}, y = cbeta)
-                            }) |> as.data.frame()
-all_correlations[order(all_correlations$c.beta.measured), ]
-```
-
-```{r}
-B.cells <- c("B.cells.memory", "Plasma.cells", 
-             "B.cells.naive")
-Macro <- c("Macrophages.M2", "Macrophages.M0", 
-           "Dendritic.cells.activated", "Monocytes", 
-           "Macrophages.M1", "Dendritic.cells.resting")
-Mast <- c("Mast.cells.activated", "Mast.cells.resting")
-Myeloid <- c("Eosinophils", "Neutrophils")
-NK <- c("NK.cells.resting", "NK.cells.activated")
-T.cells <- c("T.cells.follicular.helper", "T.cells.CD4.naive", 
-             "T.cells.regulatory..Tregs.", "T.cells.CD4.memory.activated", 
-             "T.cells.gamma.delta", "T.cells.CD4.memory.resting", 
-             "T.cells.CD8")
-grouping_determined_by_team <- list("B.cells" = B.cells,
-                                    "Macro" = Macro,
-                                    "Mast" = Mast,
-                                    "Myeloid" = Myeloid,
-                                    "NK" = NK,
-                                    "T.cells" = T.cells)
-
-totals <- NULL
-for (i in seq_along(grouping_determined_by_team)) {
-  use <- colnames(cibersort) %in% grouping_determined_by_team[[i]]
-  totals <- cbind(totals, rowSums(cibersort[, use, drop = FALSE]))
-}
-colnames(totals) <- names(grouping_determined_by_team)
-
-df <- data.frame("cell.type" = factor(rep(colnames(totals), each = nrow(cibersort))),
-                 "fraction" = c(totals / cibersort$Absolute.score..sig.score.),
-                 "purity.bin" = rep(cibersort$purity.bin, ncol(totals)),
-                 "c.beta.measured.bin" = rep(cibersort$c.beta.measured.bin, ncol(totals)),
-                 "c.beta.adj1.bin" = rep(cibersort$c.beta.adj1.bin, ncol(totals)))
-
-table(df$cell.type, useNA = "ifany")
-```
-
-```{r plot_cell_fractions}
-cell_fraction_figure <- function(data, x, xname) {
-  
-  col_jco <- pal_jco("default")(7L)
-
-  colors <- c("B.cells" = col_jco[1L], 
-              "Macro" = col_jco[2L], 
-              "Mast" = col_jco[3L], 
-              "Myeloid" = col_jco[4L], 
-              "NK" = col_jco[5L], 
-              "T.cells" = col_jco[7L])
-
-  title <- parse(text = paste('"Immune Compartment Fractions vs ', xname))
-  label <- parse(text = paste('"', xname))
-  gg <- ggplot(data = subset(data, !is.na(data[, x])),
-               aes(.data[[x]], fraction, fill = cell.type)) +
-    geom_boxplot() +
-    scale_fill_manual(values = colors) +
-    gg_theme +
-    ylab("Fraction of immune compartment") + xlab(label)
-  print(gg)
-}
-```
-
-```{r generate_cell_fraction_plots}
-cell_fraction_figure(df, "c.beta.measured.bin", 'Measured c"[beta]')
-cell_fraction_figure(df, "c.beta.adj1.bin", 'Purity-adjusted c"[beta]^alpha')
-```
-
