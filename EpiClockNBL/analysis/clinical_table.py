@@ -70,10 +70,15 @@ def pipeline():
         counts_df = counts_df.loc[cat_order].copy()
         
         pct_float = (counts_df['count'] / counts_df['count'].sum() * 100)
-        pct_str = pct_float.apply(formatValue)
+        pct_str = pct_float.apply(formatPct)
         # Number and percentage together: N (XX%)
         counts_df['count'] = counts_df['count'].astype(str) + ' (' + pct_str + '%)'
         return counts_df.rename(index=lambda x:capFirstLetter(str(x))).rename(index=lambda x:'Missing' if x.lower()=='nan' else x).rename(index=lambda x:' '*20 + x).reset_index().values.tolist()
+    def formatPct(x):
+        # Round to the nearest whole number, values below 1 are shown as "<1"
+        if x < 1:
+            return '<1'
+        return str(int(x + 0.5))
     def formatValue(x):
         if x < 1:
             return f'{x:.2g}'
