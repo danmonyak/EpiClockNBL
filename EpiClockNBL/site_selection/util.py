@@ -259,7 +259,7 @@ def gen_CpG_set(data, neutral_DNA_CpG_list, n_select=None, criteria=None, n_sele
     return Clock_CpGs
 
 
-def clusteringWeights(km_beta_values, random_state=None):
+def clusteringWeights(km_beta_values, random_state=None, return_labels=False):
     """
     Return the clustering weights w_s of each CpG site s
     See "Calculating clustering weight" notebook in "Select_fCpGs" directory
@@ -268,10 +268,12 @@ def clusteringWeights(km_beta_values, random_state=None):
     ----------
     km_beta_values : DataFrame of beta values (# CpGs x # tumors)
     random_state : random_state variable to pass to KMeans for deterministic output
+    return_labels : True iff the cluster label of each tumor should also be returned
     
     Returns
     -------
     w : Series with clustering weight of each site
+    labels : Series with cluster label of each tumor (only if return_labels is True)
     """
     km = KMeans(n_clusters=4, random_state=random_state).fit(km_beta_values.T)
     
@@ -292,6 +294,9 @@ def clusteringWeights(km_beta_values, random_state=None):
                 index=km_beta_values.index)
             w += centroid_diff * k_frac.loc[(i, j)]
     
+    if return_labels:
+        labels = pd.Series(data=km.labels_, index=km_beta_values.columns)
+        return w, labels
     return w
 
 def getBinEdges(start, stop, binwidth, hardStop=True):

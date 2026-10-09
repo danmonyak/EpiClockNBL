@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import seaborn as sns
 from scipy.stats import spearmanr
-from sklearn.cluster import KMeans
 import EpiClockNBL.util as nbl_util
 nbl_consts = nbl_util.consts
 from .util import clusteringWeights, getBinEdges
@@ -173,8 +172,12 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
 
     # Determine clustering weights
     # See local_util for details
-    clustering_weights_list = [clusteringWeights(km_beta_values, random_state=0) for i in range(50)]
+    clustering_results_list = [clusteringWeights(km_beta_values, random_state=0, return_labels=True) for i in range(50)]
+    clustering_weights_list = [weights for weights, labels in clustering_results_list]
     clustering_weights_ser = pd.concat(clustering_weights_list, axis=1).mean(axis=1)
+
+    # Cluster label of each tumor (used for figure)
+    tumor_clusters = clustering_results_list[0][1]
 
     # Only consider sites in balanced_notStuck
     # Sort sites by clustering weights and select 1000 (or fewer) sites with the lowest weight
@@ -372,9 +375,6 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
 
     n_sites_each = 50
 
-    # Same clustering as used in clusteringWeights
-    km = KMeans(n_clusters=4, random_state=0).fit(km_beta_values.T)
-    tumor_clusters = pd.Series(km.labels_, index=km_beta_values.columns)
     tumor_order = tumor_clusters.sort_values(kind='stable').index
     cluster_boundaries = np.cumsum(tumor_clusters.value_counts().sort_index().values)[:-1]
 
