@@ -293,6 +293,28 @@ if (params$save_data_as_rds) saveRDS(query_clinical_flat,
                                      file = file.path(save_path, paste0(params$clinical_filename, ".rds")))
 ```
 
+##### Supplementary clinical data
+
+```{r download_clinical_supplement, eval = params$save_data, results='hide', message=FALSE, warning=FALSE}
+# download the clinical supplement spreadsheets
+query_clinical_supp <- GDCquery(project = params$project,
+                                data.category = 'Clinical',
+                                data.type = 'Clinical Supplement')
+GDCdownload(query_clinical_supp, directory = file.path(save_path, params$GDCdata_dir))
+```
+
+```{r save_clinical_supplement, eval = params$save_data}
+# save a copy of the Discovery spreadsheet (has MYCN status)
+# the GDC data directory may be removed below
+supp_files <- list.files(file.path(save_path, params$GDCdata_dir, params$project, "Clinical"),
+                         recursive = TRUE, full.names = TRUE)
+supp_file <- supp_files[grepl("ClinicalData_Discovery", basename(supp_files), fixed = TRUE)]
+stopifnot(length(supp_file) == 1)
+file.copy(supp_file,
+          file.path(save_path, paste0(params$clinical_filename, "_supplement.xlsx")),
+          overwrite = TRUE)
+```
+
 ```{r remove_gdc_data_direction, eval = params$save_data}
 if (params$rm_GDCdata_dir) {
   unlink(file.path(save_path, params$GDCdata_dir), recursive = TRUE)

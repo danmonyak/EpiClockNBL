@@ -210,7 +210,7 @@ From inside `1. Simulation`:
    subst P: "C:\PATH\TO\OFFICIAL_INDIR"
    ```
    This works around a Windows path length limit in R that otherwise causes errors in *Data_Prep.Rmd*.
-3. Open *Data_Prep.Rmd* and *Knit* the file. This retrieves the TARGET methylation, gene expression and clinical data, saves it to *official_indir*/TARGET, and generates an HTML report.
+3. Open *Data_Prep.Rmd* and *Knit* the file. This retrieves the TARGET methylation, gene expression and clinical data (including the clinical supplement with MYCN status), saves it to *official_indir*/TARGET, and generates an HTML report.
 
    This usually takes less than 1 hour but can take a few hours. Use a machine with at least 16 GB of memory. With only 8 GB it can work, but it will take a few hours and the computer should not be used for anything else at the same time.
 4. **Windows only.** When it has finished, unlink the virtual `P:` drive in PowerShell:
@@ -220,13 +220,7 @@ From inside `1. Simulation`:
 
 #### 2b. Data processing
 
-This step reads MYCN amplification status from the TARGET-NBL clinical supplement, *TARGET_NBL_ClinicalData_Discovery_20230523.xlsx*, which must be at:
-
-```
-<official_indir>/TARGET/gdc_data/TARGET-NBL/Clinical/Clinical_Supplement/f5bfc8a5-b903-4418-b633-62234388a635/TARGET_NBL_ClinicalData_Discovery_20230523.xlsx
-```
-
-Then open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate the annotated clinical table.
+Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate the annotated clinical table.
 
 ### 3. Select fCpGs
 

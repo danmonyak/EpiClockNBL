@@ -91,7 +91,7 @@ def pipeline(verbose=True):
         time.sleep(1)
 
     supp_tbl = pd.read_excel(
-        os.path.join(proj_dir, 'gdc_data', 'TARGET-NBL', 'Clinical', 'Clinical_Supplement', 'f5bfc8a5-b903-4418-b633-62234388a635', 'TARGET_NBL_ClinicalData_Discovery_20230523.xlsx'),
+        os.path.join(proj_dir, 'cohort1.clinical_supplement.xlsx'),
         sheet_name='Clinical Data', index_col=0
         )
 
