@@ -1,0 +1,2 @@
+@echo off
+Rscript -e "rmarkdown::render('GMM_STAN.Rmd', output_format = 'html_document', output_file = paste0('ADJUSTED_GMM_STAN_', format(Sys.time(), '%%Y-%%m-%%d_%%H-%%M-%%S'), '.html'), params = list(prefix='ADJUSTED', dataset='TARGET', beta_vals_filename='cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv'))"
