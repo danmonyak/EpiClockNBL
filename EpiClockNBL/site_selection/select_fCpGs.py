@@ -212,7 +212,7 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     #     c_beta_final_samples.to_csv(c_beta_filepath, sep='\t', header=False)
 
     # Save beta values of Clock sites
-    outfile_path = os.path.join(outdir, f'NBL.methyl.antiNonIterClustNotStuck_sites.tsv')
+    outfile_path = os.path.join(outdir, f'cohort1.methyl.clock_sites.tsv')
     beta_values_unbiased_sites.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
 
     # Save purity-adjusted beta values of Clock sites
@@ -221,7 +221,7 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
         index_col=0
     )
     beta_values_adjusted = beta_values_adjusted.rename(columns=nbl_util.getSampleID)
-    outfile_path = os.path.join(outdir, f'NBL.methyl_adjusted.antiNonIterClustNotStuck_sites.tsv')
+    outfile_path = os.path.join(outdir, f'cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv')
     beta_values_adjusted.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
 
     if verbose:
