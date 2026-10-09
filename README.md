@@ -324,7 +324,7 @@ Open *GSEA_Data_Preprocessing.Rmd* in RStudio and knit the file. This preprocess
 1. Download the GSEA software from https://www.gsea-msigdb.org/gsea/downloads.jsp
 2. Open GSEA, navigate to *Load data*, and click *Browse for files*.
 3. Load the `.cls` and `.gct` files.
-4. Navigate to *Run GSEA* and select the following options.
+4. Navigate to *Run GSEA* and select the following options. Leave all other options at their defaults.
 
    | Field | Value |
    |---|---|
