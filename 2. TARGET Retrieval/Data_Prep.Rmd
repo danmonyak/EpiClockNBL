@@ -57,7 +57,7 @@ getTumorIDs <- function(fullTumorIDs) {
 
 #### Query Clinical Data
 
-```{r query_clinical_data}
+```{r query_clinical_data, results='hide', message=FALSE, warning=FALSE}
 query_clinical <- GDCquery_clinic(project = params$project, type = "clinical")
 
 participant_subset <- query_clinical$submitter_id
@@ -66,7 +66,7 @@ participant_subset <- query_clinical$submitter_id
 
 #### Query Methylation Data
 
-```{r query_methyl_data}
+```{r query_methyl_data, results='hide', message=FALSE, warning=FALSE}
 methyl.platform <- "Illumina Human Methylation 450"
 
 query_methyl <- GDCquery(project = params$project, 
@@ -132,7 +132,7 @@ colSums(query_clinical[, c('reason_methyl', "note_multiple_tumors")])
 
 Redefine query to include only participants with tumors in the defined subset.
 
-```{r final_methylation_query}
+```{r final_methylation_query, results='hide', message=FALSE, warning=FALSE}
 query_methyl <- GDCquery(project = params$project, 
                          data.category = 'DNA Methylation', 
                          platform = c(methyl.platform),
@@ -145,7 +145,7 @@ query_methyl <- GDCquery(project = params$project,
 
 Query gene expression data for only those participants in the analysis dataset.
 
-```{r query_gene_data}
+```{r query_gene_data, results='hide', message=FALSE, warning=FALSE}
 query_gene <- GDCquery(project = params$project, 
                        data.category = 'Transcriptome Profiling', 
                        data.type = 'Gene Expression Quantification', 
@@ -163,7 +163,7 @@ For the `r sum(query_clinical$in_CpG_dataset)` participants in the analysis data
 
 ##### Gene Expression Data
 
-```{r download_and_save_gene, eval = params$save_data}
+```{r download_gene, eval = params$save_data, results='hide', message=FALSE, warning=FALSE}
 # download and save the gene expression data
 GDCdownload(query_gene,
             directory = file.path(save_path, params$GDCdata_dir))
@@ -173,43 +173,67 @@ data.seq <- GDCprepare(query_gene,
                         winslash = "/",
                         mustWork = TRUE)
                        )
+```
 
-# use the raw_counts data for GSEA
-raw_counts <- as.data.frame(data.seq@assays@data$unstranded)
-colnames(raw_counts) <- rownames(data.seq@colData)
-
-# subset to the specific tumors of interest
-# Note this step removes the "B" tumors for patients with more than 1 tumor
-raw_counts <- raw_counts[, getTumorIDs(colnames(raw_counts)) %in% common_tumors]
-
-# some tumors have multiple gene expression datasets, remove 1
-dups <- duplicated(getTumorIDs(colnames(raw_counts)))
-cat("Tumors with multiple measurements:")
-print(getTumorIDs(colnames(raw_counts))[dups])
-print(colnames(raw_counts)[dups | duplicated(getTumorIDs(colnames(raw_counts)), fromLast = TRUE)])
-raw_counts <- raw_counts[, !dups]
-
-# remove Y chromosome genes and store Ensembl IDs and gene names
-rm_pary <- grepl("PAR_Y", data.seq@rowRanges$gene_id)
-raw_counts$gene_id <- data.seq@rowRanges$gene_id
-raw_counts$gene_name <- data.seq@rowRanges$gene_name
-raw_counts <- raw_counts[!rm_pary, ]
-
+```{r save_gene, eval = params$save_data}
 # Note there are duplicate gene names
 dup_rows <- duplicated(data.seq@rowRanges$gene_name) | duplicated(data.seq@rowRanges$gene_name, fromLast = TRUE)
 table(data.seq@rowRanges$gene_name[dup_rows])
 
+raw_counts <- as.data.frame(data.seq@assays@data$unstranded) # raw_counts for GSEA
+tpm <- as.data.frame(data.seq@assays@data$tpm_unstrand) # tpm for cibersort
+
+process_gene_expr <- function(expr) {
+  colnames(expr) <- rownames(data.seq@colData)
+  
+  # subset to the specific tumors of interest
+  # Note this step removes the "B" tumors for patients with more than 1 tumor
+  expr <- expr[, getTumorIDs(colnames(expr)) %in% common_tumors]
+  
+  # some tumors have multiple gene expression datasets, remove 1
+  dups <- duplicated(getTumorIDs(colnames(expr)))
+  cat("Tumors with multiple measurements:")
+  print(getTumorIDs(colnames(expr))[dups])
+  print(colnames(expr)[dups | duplicated(getTumorIDs(colnames(expr)), fromLast = TRUE)])
+  expr <- expr[, !dups]
+  
+  # remove Y chromosome genes and store Ensembl IDs and gene names
+  rm_pary <- grepl("PAR_Y", data.seq@rowRanges$gene_id)
+  expr$gene_id <- data.seq@rowRanges$gene_id
+  expr$gene_name <- data.seq@rowRanges$gene_name
+  expr <- expr[!rm_pary, ]
+  
+  expr
+}
+
+tpm <- process_gene_expr(tpm)
+raw_counts <- process_gene_expr(raw_counts)
+
+# Collapse duplicate genes in tpm matrix and set gene names as row names
+tpm <- tpm[!is.na(tpm$gene_name) & tpm$gene_name != "", ]
+expr <- as.matrix(tpm[, setdiff(colnames(tpm), c("gene_id", "gene_name"))])
+tpm <- rowsum(expr, group = tpm$gene_name)
+
+# ------------------------ Save raw counts
+write.table(tpm, file = file.path(save_path, paste0(params$gene_filename, "_tpm.tsv")), 
+            sep = "\t")
+if (params$save_data_as_rds) saveRDS(tpm, 
+                                     file = file.path(save_path, paste0(params$gene_filename, "_tpm.rds")))
+# ------------------------ Save tpm
 write.table(raw_counts, file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.tsv")), 
             sep = "\t")
 if (params$save_data_as_rds) saveRDS(raw_counts, 
                                      file = file.path(save_path, paste0(params$gene_filename, "_raw_counts.rds")))
+# ---------------------------------------
+dim(tpm)
 dim(raw_counts)
-rm(raw_counts, data.seq, query_gene)
+rm(tpm, raw_counts, data.seq, query_gene)
 ```
 
 ##### Methylation Data
 
-```{r download_and_save_methyl, eval = params$save_data}
+
+```{r download_methyl, eval = params$save_data, results='hide', message=FALSE, warning=FALSE}
 # download and save the DNA methylation data
 GDCdownload(query_methyl, directory = file.path(save_path, params$GDCdata_dir))
 data.methyl <- GDCprepare(query_methyl,
@@ -218,7 +242,9 @@ data.methyl <- GDCprepare(query_methyl,
                             winslash = "/",
                             mustWork = TRUE)
                           )
+```
 
+```{r save_methyl, eval = params$save_data}
 methyl <- data.methyl@assays@data[[1L]]
 colnames(methyl) <- rownames(data.methyl@colData)
 
