@@ -682,6 +682,12 @@ def plotTumorWise(beta_values, CpG_list=None, sample_list=None, n_samps=30, ncol
         fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)    
 
 
+class OverwriteError(Exception):
+    '''
+    Raised by writeWithoutOverwrite when the data to save differs from the existing file
+    '''
+    pass
+
 def writeWithoutOverwrite(filepath, data,
                           writeFunc, readFunc, compareFunc=None,
                           verbose=True):
@@ -704,7 +710,7 @@ def writeWithoutOverwrite(filepath, data,
             comparison = np.all(data == existing_data)
         
         if not comparison:
-            raise Exception('Current output would overwrite alternative data...')
+            raise OverwriteError('Current output would overwrite alternative data...')
 
         if verbose:
             print('Current output matches existing file.')
