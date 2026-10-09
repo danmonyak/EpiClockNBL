@@ -10,7 +10,6 @@ params:
   methyl_filename: "cohort1.methyl"
   gene_filename: "cohort1.rnaseq"
   processed_clinical_filename: "clinical.processed.tsv"
-  purity_filename: "csv file containing purity estimates"
   lookup_filename: "xlsx file containing CpG site specific beta values from WB"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
 editor_options: 
@@ -117,23 +116,14 @@ cat("Dimensions of CIBERSORT results", dim(cibersort), "\n")
 
 ### Purity Values
 
-Purity estimates are taken from Aran, D., Sirota, M. and Butte, A. J.
-(2015) Systematic pan-cancer analysis of tumor purity. Nature
-Communications, 6, 8971. 
+Purity estimates are the LUMP values in the processed clinical table.
 
 ```{r read_purity}
-purity_all <- read.csv(file.path(save_path,
-                                 params$purity_filename))
-# keep only the breast cancers
-purity_breast <- purity_all[purity_all$Cancer.type == "BRCA", ]
-# removing columns "Cancer.type" and "X" (which is NA for breast)
-purity_breast <- purity_breast[, c("Sample.ID", "ESTIMATE", "ABSOLUTE", "LUMP", "IHC", "CPE")]
-rm(purity_all)
-
 # keep only the data for tumors used in the analysis
-idx <- match(getTumorIDs(colnames(brca.methyl)), purity_breast$Sample.ID)
-cat("All current tumors are in the purity dataset", !any(is.na(idx)), "\n")
-purity_breast <- purity_breast[idx, ]
+idx <- match(getTumorIDs(colnames(brca.methyl)), clinical$sampleID)
+cat("All current tumors are in the clinical table", !any(is.na(idx)), "\n")
+purity <- data.frame("Sample.ID" = clinical$sampleID[idx],
+                     "LUMP" = clinical$LUMP[idx])
 ```
 
 ### Read CpG Sites
@@ -183,25 +173,25 @@ too_many_na_values <- colMeans(is.na(brca.methyl)) >= 0.05
 brca.methyl <- brca.methyl[, !too_many_na_values]
 brca.seq <- brca.seq[, !too_many_na_values]
 cibersort <- cibersort[!too_many_na_values, ]
-purity_breast <- purity_breast[!too_many_na_values, ]
-purity_breast$CPE.bin <- cut(purity_breast$CPE, breaks = seq(0.6, 1.0, 0.1), include.lowest = TRUE)
+purity <- purity[!too_many_na_values, ]
+purity$LUMP.bin <- cut(purity$LUMP, breaks = seq(0.7, 1.0, 0.1), include.lowest = TRUE)
 cat(" dimensions of brca.methyl  ", dim(brca.methyl), "\n",
     "dimensions of brca.seq     ", dim(brca.seq), "\n",
     "dimensions of cibersort    ", dim(cibersort), "\n",
-    "dimensions of purity_breast", dim(purity_breast), "\n")
+    "dimensions of purity       ", dim(purity), "\n")
 cat("Names align:", isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
                                      getTumorIDs(colnames(brca.seq)))),
     isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
                      getTumorIDs(cibersort$Mixture))),
     isTRUE(all.equal(getTumorIDs(colnames(brca.methyl)),
-                     getTumorIDs(purity_breast$Sample.ID))), "\n")
+                     getTumorIDs(purity$Sample.ID))), "\n")
 ```
 
 ```{r measured_s_beta}
 s_beta_measured <- apply(brca.methyl, 2L, sd, na.rm = TRUE)
 c_beta_measured <- 1.0 - s_beta_measured
-data_measured <- data.frame("purity" = purity_breast$CPE,
-                            "purity.bin" = purity_breast$CPE.bin,
+data_measured <- data.frame("purity" = purity$LUMP,
+                            "purity.bin" = purity$LUMP.bin,
                             "c_beta" = c_beta_measured,
                             "model" = rep("measured", length(c_beta_measured)))
 
@@ -211,8 +201,8 @@ data_models <- data_measured
 #### Correlation with purity
 
 ```{r echo = FALSE}
-data_measured <- data.frame("purity" = purity_breast$CPE,
-                            "purity.bin" = purity_breast$CPE.bin,
+data_measured <- data.frame("purity" = purity$LUMP,
+                            "purity.bin" = purity$LUMP.bin,
                             "c_beta" = c_beta_measured,
                             "model" = rep("measured", length(c_beta_measured)))
 
@@ -223,8 +213,8 @@ gg <- ggplot(data = data_models, aes(c_beta_measured, purity)) +
   geom_smooth(formula = y ~ x, method = "lm") +
   ggpubr::stat_cor() +
   gg_theme +
-  ggtitle(expression("Measured c"[beta] ~ "vs CPE")) +
-  xlab(expression("Measured c"[beta])) + ylab("CPE")
+  ggtitle(expression("Measured c"[beta] ~ "vs LUMP")) +
+  xlab(expression("Measured c"[beta])) + ylab("LUMP")
 print(gg)
 ```
 
@@ -332,7 +322,7 @@ for (i in 1L:ncol(brca.methyl)) {
 ```
 
 ```{r}
-beta_adj1_tumor <- {{t(brca.methyl) - t(lm22_wgts) * {1.0 - purity_breast$CPE}} / purity_breast$CPE} |> t()
+beta_adj1_tumor <- {{t(brca.methyl) - t(lm22_wgts) * {1.0 - purity$LUMP}} / purity$LUMP} |> t()
 
 cat("This adjustment results in ", mean(beta_adj1_tumor < 0.0 | beta_adj1_tumor > 1.0, na.rm = TRUE)*100,
     "% of the non-NA beta values outside of [0, 1]; we truncate these.\n")
@@ -342,8 +332,8 @@ beta_adj1_tumor <- pmin(pmax(beta_adj1_tumor, 0.0), 1.0)
 s_beta_adj1 <- apply(beta_adj1_tumor, 2L, sd, na.rm = TRUE)
 c_beta_adj1 <- 1.0 - s_beta_adj1
 
-data_adj1 <- data.frame("purity" = purity_breast$CPE,
-                        "purity.bin" = purity_breast$CPE.bin,
+data_adj1 <- data.frame("purity" = purity$LUMP,
+                        "purity.bin" = purity$LUMP.bin,
                         "c_beta" = c_beta_adj1,
                         "model" = rep("adj1", length(c_beta_adj1)))
 data_models <- rbind(data_models,
@@ -357,7 +347,7 @@ The Pearson Correlation coefficient with
 ```{r}
 cor(cbind("measured" = c_beta_measured,
           "purity_adjusted" = c_beta_adj1,
-          "Purity" = purity_breast$CPE))
+          "Purity" = purity$LUMP))
 ```
 
 ```{r echo = FALSE}
@@ -367,7 +357,7 @@ gg <- ggplot(data = data_adj1, aes(purity, c_beta)) +
   ggpubr::stat_cor() +
   gg_theme +
   xlab(expression("Purity-adjusted c"[beta]^alpha)) +
-  ylab("CPE")
+  ylab("LUMP")
 print(gg)
 
 data_c_beta <- data.frame("purity" = data_measured$purity,
@@ -430,10 +420,10 @@ print(immune_correlations)
 
 ```{r}
 # add purity information to cibersort result
-idx <- match(getTumorIDs(cibersort$Mixture), purity_breast$Sample.ID)
+idx <- match(getTumorIDs(cibersort$Mixture), purity$Sample.ID)
 cibersort <- cibersort[idx, ]
-cibersort$purity <- purity_breast$CPE
-cibersort$purity.bin <- purity_breast$CPE.bin
+cibersort$purity <- purity$LUMP
+cibersort$purity.bin <- purity$LUMP.bin
 
 # add c-beta estimates to cibersort result
 cat("cibersort tumor names align with c_beta names", 
@@ -463,7 +453,7 @@ absolute_score_figure <- function(data, x, xname) {
 
 ```{r Absolute_score_vs_purity}
 table(cibersort$purity.bin, useNA = "ifany")
-absolute_score_figure(data = cibersort, x = "purity", xname = 'CPE"')
+absolute_score_figure(data = cibersort, x = "purity", xname = 'LUMP"')
 ```
 
 ```{r Absolute_score_vs_Measured}
