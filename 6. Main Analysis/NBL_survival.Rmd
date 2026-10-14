@@ -43,6 +43,7 @@ survival_data <- data.frame(
   mitotic.age=scale(clinical$phi),                # Use phi as tumor mitotic age - scaled
   mitotic.age.split1=scale(clinical$phi.split1),
   mitotic.age.split2=scale(clinical$phi.split2),
+  mitotic.age.adjusted=scale(clinical$phi.adjusted),  # From purity-adjusted beta values - missing for some tumors
   # DELETE
   LUMP=scale(clinical$LUMP),
   #
@@ -73,6 +74,9 @@ survival_data <- survival_data %>%
       #
       dichom.split2 = ntile(mitotic.age.split2, 2),
       dichom.split2 = factor(dichom.split2, levels = c(1, 2), labels = c("Young", "Old")),
+      #
+      dichom.adjusted = ntile(mitotic.age.adjusted, 2),
+      dichom.adjusted = factor(dichom.adjusted, levels = c(1, 2), labels = c("Young", "Old")),
       )
 ```
 
@@ -181,6 +185,15 @@ makeKmStratifiedPlot(survival_data, "dichom.split1", file.path(figure_outdir, "k
 #######################################
 
 makeKmStratifiedPlot(survival_data, "dichom.split2", file.path(figure_outdir, "km_plot.split2.svg"))
+```
+
+## Tumors with purity-adjusted mitotic age
+```{r adjusted-tumors-km}
+#######################################
+### Tumors with purity-adjusted phi ###
+#######################################
+
+makeKmStratifiedPlot(survival_data, "dichom.adjusted", file.path(figure_outdir, "km_plot.adjusted.svg"))
 ```
 
 # Cox-models {.tabset .tabset-fade}
@@ -358,6 +371,49 @@ plot(schoenfeld_test)
 ```{r check-confounding-2-split2}
 survival_data$stage4 <- survival_data$inss_stage == 'Stage 4'
 surv.model <- coxph(Surv(time, event) ~ mitotic.age.split2 + stage4 + patient_age + myc, data = survival_data[!is.na(survival_data$myc),])
+
+cat(sprintf('Used %d samples\n', summary(surv.model)$n))
+
+coef_table <- coxResultsTable(surv.model)
+
+# Display as a kable table
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
+schoenfeld_test <- cox.zph(surv.model)
+print(schoenfeld_test)
+# Display results
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test)
+```
+
+## Predict only with purity-adjusted tumor mitotic age
+
+```{r cox-models-adjusted, message = F}
+surv.model <- coxph(Surv(time, event) ~ mitotic.age.adjusted,
+                                   data = survival_data)
+cat(sprintf('Used %d samples\n', summary(surv.model)$n))
+
+coef_table <- coxResultsTable(surv.model)
+
+# Display as a kable table
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+schoenfeld_test <- cox.zph(surv.model)
+print(schoenfeld_test)
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test)
+```
+
+## Predict with purity-adjusted tumor mitotic age, patient age, stage, and MYC amplication
+
+```{r check-confounding-2-adjusted}
+survival_data$stage4 <- survival_data$inss_stage == 'Stage 4'
+surv.model <- coxph(Surv(time, event) ~ mitotic.age.adjusted + stage4 + patient_age + myc, data = survival_data[!is.na(survival_data$myc),])
 
 cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 
