@@ -431,3 +431,51 @@ print(schoenfeld_test)
 # Plot residuals for proportional hazards check
 plot(schoenfeld_test)
 ```
+
+## Predict only with tumor mitotic age - tumors with purity-adjusted mitotic age
+
+```{r cox-models-adjusted-tumors, message = F}
+# Same tumors as the purity-adjusted models, but with the unadjusted mitotic age
+adjusted_tumors_data <- survival_data[!is.na(survival_data$mitotic.age.adjusted),]
+
+surv.model <- coxph(Surv(time, event) ~ mitotic.age,
+                                   data = adjusted_tumors_data)
+cat(sprintf('Used %d samples\n', summary(surv.model)$n))
+
+coef_table <- coxResultsTable(surv.model)
+
+# Display as a kable table
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+schoenfeld_test <- cox.zph(surv.model)
+print(schoenfeld_test)
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test)
+```
+
+## Predict with tumor mitotic age, patient age, stage, and MYC amplication - tumors with purity-adjusted mitotic age
+
+```{r check-confounding-2-adjusted-tumors}
+# Same tumors as the purity-adjusted models, but with the unadjusted mitotic age
+adjusted_tumors_data <- survival_data[!is.na(survival_data$mitotic.age.adjusted),]
+
+surv.model <- coxph(Surv(time, event) ~ mitotic.age + stage4 + patient_age + myc, data = adjusted_tumors_data[!is.na(adjusted_tumors_data$myc),])
+
+cat(sprintf('Used %d samples\n', summary(surv.model)$n))
+
+coef_table <- coxResultsTable(surv.model)
+
+# Display as a kable table
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+
+schoenfeld_test <- cox.zph(surv.model)
+print(schoenfeld_test)
+# Display results
+
+# Plot residuals for proportional hazards check
+plot(schoenfeld_test)
+```
