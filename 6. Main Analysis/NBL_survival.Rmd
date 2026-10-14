@@ -77,6 +77,10 @@ survival_data <- survival_data %>%
       #
       dichom.adjusted = ntile(mitotic.age.adjusted, 2),
       dichom.adjusted = factor(dichom.adjusted, levels = c(1, 2), labels = c("Young", "Old")),
+      #
+      # Unadjusted mitotic age, split within the tumors that have a purity-adjusted mitotic age
+      dichom.adjusted_tumors = ntile(ifelse(is.na(mitotic.age.adjusted), NA, mitotic.age), 2),
+      dichom.adjusted_tumors = factor(dichom.adjusted_tumors, levels = c(1, 2), labels = c("Young", "Old")),
       )
 ```
 
@@ -194,6 +198,15 @@ makeKmStratifiedPlot(survival_data, "dichom.split2", file.path(figure_outdir, "k
 #######################################
 
 makeKmStratifiedPlot(survival_data, "dichom.adjusted", file.path(figure_outdir, "km_plot.adjusted.svg"))
+```
+
+## Tumors with purity-adjusted mitotic age, stratified by unadjusted mitotic age
+```{r adjusted-tumors-km-unadjusted}
+#######################################
+### Tumors with purity-adjusted phi ###
+#######################################
+
+makeKmStratifiedPlot(survival_data, "dichom.adjusted_tumors", file.path(figure_outdir, "km_plot.adjusted_tumors.svg"))
 ```
 
 # Cox-models {.tabset .tabset-fade}
