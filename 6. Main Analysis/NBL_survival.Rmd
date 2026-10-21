@@ -1,6 +1,9 @@
 ---
 title: "Survival Analysis"
 output: html_document
+
+params:
+  filter_0.8: FALSE
 ---
 
 ```{r setup, include=FALSE}
@@ -23,6 +26,9 @@ clinical <- read.table(file.path(proj_dir, 'clinical.processed.withAges.tsv'), s
 clinical$in_analysis_dataset <- as.logical(clinical$in_analysis_dataset)
 clinical$in_analysis_dataset[is.na(clinical$in_analysis_dataset)] <- FALSE
 clinical$myc <- clinical$MYCN.status
+if (params$filter_0.8) {
+  clinical <- clinical[clinical$LUMP >= 0.8,]
+}
 
 cat(sprintf('Number of tumors: %d', sum(clinical$in_analysis_dataset)))
 ```
