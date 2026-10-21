@@ -100,7 +100,7 @@ def pipeline():
         
         table_text_list = []
         table_text_list.append(
-            ['Patients', f'{clinical_tbl.shape[0]} (100%)']
+            ['Patients, N', f'{clinical_tbl.shape[0]} (100%)']
         )
         for num_feat in summary_num_features[cohort]:
             table_text_list.append(featNameRow(num_feat))
