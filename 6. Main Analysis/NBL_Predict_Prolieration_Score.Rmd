@@ -144,9 +144,6 @@ rmse <- function(y, pred) sqrt(mean((y - pred)^2))
 # R-squared, as the proportion of variance explained (1 - SSE/SST)
 rsq <- function(y, pred) 1 - sum((y - pred)^2) / sum((y - mean(y))^2)
 
-# Squared Pearson correlation between observed and predicted values
-rsq_cor <- function(y, pred) cor(y, pred)^2
-
 set.seed(0)
 
 repeat_results <- NULL
@@ -183,13 +180,12 @@ for (r in seq_len(params$n_repeats)) {
   repeat_results <- rbind(repeat_results, data.frame(
     Repeat = r,
     RMSE = rmse(y, y.pred_test),
-    R_squared = rsq(y, y.pred_test),
-    R_squared_cor = rsq_cor(y, y.pred_test)
+    R_squared = rsq(y, y.pred_test)
   ))
 }
 
 # Summarize the performance metrics across repeats
-metrics <- c("RMSE", "R_squared", "R_squared_cor")
+metrics <- c("RMSE", "R_squared")
 results <- data.frame(
   Metric = metrics,
   Mean = sapply(metrics, function(m) mean(repeat_results[[m]])),
