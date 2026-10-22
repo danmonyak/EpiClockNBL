@@ -5,6 +5,10 @@ output: html_document
 params:
   load_data: FALSE
   # nfolds: 30
+  n_repeats: 20       # repeats of the outer cross-validation
+  n_outer_folds: 5    # outer folds, for estimating test performance
+  n_inner_folds: 10   # inner folds, for choosing lambda
+  lambda_rule: "lambda.min"   # or "lambda.1se"
 ---
 
 # Setup and data import
@@ -129,69 +133,86 @@ stopifnot(sum(is.na(y)) == 0)
 
 Using `r length(y)` samples. Response variable is the mean of the HALLMARK_E2F_TARGETS and HALLMARK_G2M_CHECKPOINT scores.
 
-## Split into training and test sets
+## Evaluate the model with repeated nested cross-validation
 
-```{r split-train-test}
-set.seed(0)
+The test performance of the whole modeling procedure (choosing $\lambda$ by `r params$n_inner_folds`-fold cross-validation, then fitting the lasso model) is estimated with `r params$n_repeats` repeats of `r params$n_outer_folds`-fold cross-validation. In each outer fold, $\lambda$ is chosen by cross-validation on the training folds only, and the model is evaluated on the held-out fold. Within each repeat, the held-out predictions from all outer folds are pooled, so every sample gets exactly one out-of-sample prediction, and the performance metrics are computed from them. The mean and standard deviation of each metric across repeats are reported.
 
-n <- nrow(x)
-training.size <- 0.8
-
-train_idx <- sample(seq_len(n), size = training.size * n)
-
-x_train <- x[train_idx, ]
-x_test  <- x[-train_idx, ]
-
-y_train <- y[train_idx]
-y_test  <- y[-train_idx]
-```
-
-We will train the initial model using `r training.size*100`% of the labeled data: `r nrow(x_train)` training samples, `r nrow(x_test)` testing samples.
-
-## Train and evaluate the model
-
-```{r train-evaluate}
-# Fit
-set.seed(0)
-
-cv_fit <- cv.glmnet(
-  x_train, y_train,
-  alpha = 1,
-  family = "gaussian",
-  nfolds = length(y_train),
-  grouped = FALSE
-)
-
-y.pred_train <- predict(cv_fit, newx = x_train, s = "lambda.min")
-y.pred_test <- predict(cv_fit, newx = x_test, s = "lambda.min")
-
+```{r nested-cv}
 # RMSE
 rmse <- function(y, pred) sqrt(mean((y - pred)^2))
 
-# R-squared
-rsq <- function(y, pred) cor(y, pred)^2
+# R-squared, as the proportion of variance explained (1 - SSE/SST)
+rsq <- function(y, pred) 1 - sum((y - pred)^2) / sum((y - mean(y))^2)
 
-rmse.train <- rmse(y_train, y.pred_train)
-rmse.test <- rmse(y_test, y.pred_test)
+# Squared Pearson correlation between observed and predicted values
+rsq_cor <- function(y, pred) cor(y, pred)^2
 
-rsq.train <- rsq(y_train, y.pred_train)
-rsq.test <- rsq(y_test, y.pred_test)
+set.seed(0)
 
+repeat_results <- NULL
+fold_results <- NULL
+for (r in seq_len(params$n_repeats)) {
+
+  # Assign each sample to an outer fold
+  outer_folds <- sample(rep(seq_len(params$n_outer_folds), length.out = nrow(x)))
+
+  # Held-out predictions for every sample in this repeat
+  y.pred_test <- rep(NA, length(y))
+
+  for (k in seq_len(params$n_outer_folds)) {
+    test_idx <- which(outer_folds == k)
+
+    # Choose lambda by cross-validation on the training folds only
+    cv_fit <- cv.glmnet(
+      x[-test_idx, ], y[-test_idx],
+      alpha = 1,
+      family = "gaussian",
+      nfolds = params$n_inner_folds
+    )
+
+    y.pred_test[test_idx] <- as.numeric(predict(cv_fit, newx = x[test_idx, ], s = params$lambda_rule))
+
+    fold_results <- rbind(fold_results, data.frame(
+      Repeat = r,
+      Fold = k,
+      lambda = cv_fit[[params$lambda_rule]],
+      n_genes = sum(coef(cv_fit, s = params$lambda_rule)[-1] != 0)
+    ))
+  }
+
+  repeat_results <- rbind(repeat_results, data.frame(
+    Repeat = r,
+    RMSE = rmse(y, y.pred_test),
+    R_squared = rsq(y, y.pred_test),
+    R_squared_cor = rsq_cor(y, y.pred_test)
+  ))
+}
+
+# Summarize the performance metrics across repeats
+metrics <- c("RMSE", "R_squared", "R_squared_cor")
 results <- data.frame(
-  Dataset = c("Training", "Test"),
-  RMSE = c(rmse.train, rmse.test),
-  R_squared = c(rsq.train, rsq.test)
+  Metric = metrics,
+  Mean = sapply(metrics, function(m) mean(repeat_results[[m]])),
+  SD = sapply(metrics, function(m) sd(repeat_results[[m]])),
+  Min = sapply(metrics, function(m) min(repeat_results[[m]])),
+  Max = sapply(metrics, function(m) max(repeat_results[[m]]))
 )
 
-kable(results, digits = 3) %>%
+kable(results, digits = 3, row.names = FALSE,
+      caption = sprintf("Held-out performance across %d repeats of %d-fold cross-validation",
+                        params$n_repeats, params$n_outer_folds)) %>%
   kable_styling(full_width = FALSE)
 
-cat(sprintf('Standard deviation of response variable: %.2f', sd(y)))
+cat(sprintf('Standard deviation of response variable: %.2f\n', sd(y)))
+cat(sprintf('Lambda (%s) across outer folds: median %.3g, range %.3g - %.3g\n',
+            params$lambda_rule, median(fold_results$lambda), min(fold_results$lambda), max(fold_results$lambda)))
+cat(sprintf('Genes with non-zero coefficients across outer folds: median %d, range %d - %d\n',
+            as.integer(median(fold_results$n_genes)), min(fold_results$n_genes), max(fold_results$n_genes)))
 ```
 
 ## Retrain lasso model on all labeled data
 
-We will train the final model using 100% of the labeled data: `r nrow(x)` samples. Then, we will predict the proliferation score values for the unlabeled data.
+We will train the final model using 100% of the labeled data: `r nrow(x)` samples, choosing $\lambda$ with the same `r params$n_inner_folds`-fold cross-validation used above. Then, we will predict the proliferation score values for the unlabeled data.
 
 ```{r retrain}
 set.seed(0)
@@ -199,8 +220,7 @@ cv_fit_final <- cv.glmnet(
   x, y,
   alpha = 1,
   family = "gaussian",
-  nfolds = length(y_train),
-  grouped = FALSE
+  nfolds = params$n_inner_folds
 )
 
 stopifnot(all(analysis.noExpr %in% row.names(gene_meth)))
@@ -208,7 +228,7 @@ x_unlabeled <- as.matrix(gene_meth[analysis.noExpr,])
 y_unlabeled_pred <- as.data.frame(predict(
   cv_fit_final,
   newx = x_unlabeled,
-  s = "lambda.min"
+  s = params$lambda_rule
 ))
 names(y_unlabeled_pred) = c('proliferation_score')
 
