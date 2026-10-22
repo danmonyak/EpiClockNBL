@@ -3,7 +3,7 @@ title: "NBL Predict Proliferation Score"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  load_data: TRUE
+  load_data: FALSE
   # nfolds: 30
 ---
 
@@ -64,10 +64,12 @@ promoter_cpgs <- anno_sub[
 ]
 
 Clock_fCpGs <- read.table(file.path(repo_dir, "3. Select fCpGs", "outputs", "NBL_Clock_CpGs.txt"))$V1
-# intersect(rownames(promoter_cpgs), Clock_fCpGs)
+n.intersect <- length(intersect(rownames(promoter_cpgs), Clock_fCpGs))
+
+promoter_cpgs <- promoter_cpgs[!rownames(promoter_cpgs) %in% Clock_fCpGs,]
 ```
 
-CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore).
+CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore). `r n.intersect` probes were removed for being Clock CpGs.
 
 ## Mapping CpGs to genes
 
@@ -192,7 +194,7 @@ cat(sprintf('Standard deviation of response variable: %.2f', sd(y)))
 We will train the final model using 100% of the labeled data: `r nrow(x)` samples. Then, we will predict the proliferation score values for the unlabeled data.
 
 ```{r retrain}
-set.seed(123)
+set.seed(0)
 cv_fit_final <- cv.glmnet(
   x, y,
   alpha = 1,
