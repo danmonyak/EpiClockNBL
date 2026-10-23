@@ -354,7 +354,7 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     # Customize figure
     ax.set_xlabel('Clustering weight', fontsize=nbl_consts['labelfontsize'] * sf)
     ax.set_ylabel(ax.get_ylabel(), fontsize=nbl_consts['labelfontsize'] * sf)
-    ax.set_title(f'Fluctuating CpGs (n = {len(balanced_notStuck):,})', fontsize=nbl_consts['labelfontsize'] * sf)
+    ax.set_title(f'Variable CpGs (n = {len(balanced_notStuck):,})', fontsize=nbl_consts['labelfontsize'] * sf)
     ax.tick_params(axis='both', labelsize=nbl_consts['ticksfontsize'] * sf, width=sf, length=8 * sf)
 
     # Save figure
