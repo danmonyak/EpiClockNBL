@@ -29,10 +29,12 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 | `1. Simulation/` … `7. GSEA/` | Pipeline stages, run in order (see [Pipeline](#pipeline)) |
 | `data/` | Small reference files (LUMP CpGs, Hallmark pathway names, protein-coding genes) |
 | `config.json.example` | Template for the machine-specific `config.json` |
+| `environment.yml` | Conda environment with the pinned Python dependencies |
+| `conda-lock.yml`, `conda-locks/` | Fully resolved lock files for the Python environment |
 
 ## Requirements
 
-- Python 3.12 or later, with Jupyter
+- conda (Anaconda or Miniconda), for the Python environment
 - R, with RStudio recommended for knitting the R Markdown files
 - [GSEA desktop application](https://www.gsea-msigdb.org/gsea/downloads.jsp) (stage 7 only)
 - Access to a SLURM cluster (stage 1 only)
@@ -41,14 +43,9 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 
 ### Python packages
 
-- matplotlib
-- numpy
-- openpyxl
-- pandas
-- scikit-learn
-- scipy
-- seaborn
-- tqdm
+The Python dependencies are listed, with the exact versions used for the analysis, in `environment.yml` (see [Setup](#setup)). They are Python 3.13 with matplotlib, numpy, openpyxl, pandas, scikit-learn, scipy, seaborn, tqdm, and JupyterLab. The same environment is used for the notebooks and for the simulation scripts run on the cluster.
+
+Fully resolved lock files, which record the exact version of every package including indirect dependencies, are also provided: `conda-lock.yml` (all platforms) and, for use with plain conda, one file per platform in `conda-locks/`.
 
 ### R packages
 
@@ -97,7 +94,25 @@ rstan environment:
 
 Fork and clone this repository locally. Keep the clone's directory name as `EpiClockNBL`; the code uses it to locate the repository.
 
-### 1. Python path
+### 1. Python environment
+
+Create and activate the conda environment from `environment.yml`:
+
+```
+conda env create -f environment.yml
+conda activate epiclocknbl
+```
+
+To reproduce the environment exactly, create it from the lock file for your platform instead (`linux-64`, `osx-64`, `osx-arm64` or `win-64`), for example:
+
+```
+conda create --name epiclocknbl --file conda-locks/conda-linux-64.lock
+conda activate epiclocknbl
+```
+
+Use this environment to run all Python scripts and Jupyter notebooks, including the simulation scripts on the cluster.
+
+### 2. Python path
 
 The repository directory must be on the Python path.
 
@@ -116,7 +131,7 @@ C:\PATH\TO\REPO\PARENT\DIR\EpiClockNBL
 
 Always start Jupyter, and run Python scripts, from inside the repository directory (or one of its subdirectories).
 
-### 2. R `repo_dir` variable
+### 3. R `repo_dir` variable
 
 The R Markdown files expect a variable called `repo_dir`. **Repeat the following for each R environment.**
 
@@ -138,7 +153,7 @@ or on Windows:
 repo_dir <- 'C:\\PATH\\TO\\REPO\\PARENT\\DIR\\EpiClockNBL'
 ```
 
-### 3. `config.json`
+### 4. `config.json`
 
 Copy `config.json.example`, rename the copy to `config.json`, and fill in:
 
@@ -152,7 +167,7 @@ On Windows, use double backslashes in the paths:
 "official_indir": "C:\\PATH\\TO\\OFFICIAL_INDIR"
 ```
 
-### 4. Data directories
+### 5. Data directories
 
 Inside the *official_indir* directory, create three directories called `TARGET`, `Henrich` and `Other`. `TARGET` holds the discovery cohort data, `Henrich` holds the validation cohort data, and `Other` holds reference data (the blood cell-type methylation lookup table used in step 2d).
 
