@@ -3,12 +3,12 @@ title: "NBL Predict Proliferation Score"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  load_data: FALSE
+  load_data: TRUE
   # nfolds: 30
-  n_repeats: 20       # repeats of the outer cross-validation
+  n_repeats: 50       # repeats of the outer cross-validation
   n_outer_folds: 5    # outer folds, for estimating test performance
   n_inner_folds: 10   # inner folds, for choosing lambda
-  lambda_rule: "lambda.min"   # or "lambda.1se"
+  lambda_rule: "lambda.min"
 ---
 
 # Setup and data import
@@ -69,11 +69,12 @@ promoter_cpgs <- anno_sub[
 
 Clock_fCpGs <- read.table(file.path(repo_dir, "3. Select fCpGs", "outputs", "NBL_Clock_CpGs.txt"))$V1
 n.intersect <- length(intersect(rownames(promoter_cpgs), Clock_fCpGs))
+cat(sprintf("%d probes were removed for being Clock CpGs.", n.intersect))
 
 promoter_cpgs <- promoter_cpgs[!rownames(promoter_cpgs) %in% Clock_fCpGs,]
 ```
 
-CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore). `r n.intersect` probes were removed for being Clock CpGs.
+CpG probes were annotated using the appropriate Illumina array annotation package (e.g., IlluminaHumanMethylationEPICanno). Probes were retained if they mapped to promoter-associated regions, defined as CpGs annotated to TSS1500, TSS200, 5′UTR, or 1stExon, and located within CpG islands or shores (N_Shore, S_Shore).
 
 ## Mapping CpGs to genes
 
