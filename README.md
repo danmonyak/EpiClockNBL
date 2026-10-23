@@ -71,6 +71,7 @@ General R environment:
 - latex2exp
 - msigdbr
 - plyr
+- readxl
 - remotes
 - reshape2
 - rmarkdown
@@ -153,7 +154,7 @@ On Windows, use double backslashes in the paths:
 
 ### 4. Data directories
 
-Inside the *official_indir* directory, create two directories called `TARGET` and `Henrich`. `TARGET` holds the discovery cohort data and `Henrich` holds the validation cohort data.
+Inside the *official_indir* directory, create three directories called `TARGET`, `Henrich` and `Other`. `TARGET` holds the discovery cohort data, `Henrich` holds the validation cohort data, and `Other` holds reference data (the blood cell-type methylation lookup table used in step 2d).
 
 ## Pipeline
 
@@ -162,7 +163,7 @@ Run the stages in order. Each stage has a folder of the same name in the reposit
 | Stage | What it does | How it is run |
 |---|---|---|
 | 1. Simulation | Simulates fCpG methylation in a growing tumor | SLURM jobs, then a notebook |
-| 2. TARGET Retrieval | Downloads TARGET-NBL data and builds the clinical table | R Markdown, then a notebook |
+| 2. TARGET Retrieval | Downloads TARGET-NBL data, builds the clinical table, and adjusts beta values for tumor purity | R Markdown, notebook, Rscript and the CIBERSORTx website |
 | 3. Select fCpGs | Selects the fCpG (clock) sites | Notebook |
 | 4. Process Supplementary Data | Prepares the validation cohort | Notebook |
 | 5. Gaussian Mixture Model | Estimates the mitotic age of each tumor | Rscript (rstan environment) |
@@ -240,16 +241,21 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
    | Permutations | 500 |
 
 3. Save the results as *Cibersort_LM22_500perm_Analysis_Tumors.csv* in *official_indir*/TARGET.
-4. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
+
+#### 2d. Purity adjustment
+
+1. Place the blood cell-type methylation lookup table, *GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx*, in the *official_indir*/Other directory.
+2. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. On Windows, the virtual `P:` drive from step 2a must still be linked.
+3. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
    ```
    subst P: /D
    ```
 
 ### 3. Select fCpGs
 
-Open the notebook *Pipeline.ipynb* inside `3. Select fCpGs` and run all cells.
+Open the notebook *Pipeline.ipynb* inside `3. Select fCpGs` and run all cells. This requires the purity-adjusted beta values from step 2d.
 
-This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_Clock_CpGs.txt`. It also runs the sensitivity analysis, in which the tumors are randomly split into two halves and fCpGs are selected separately in each half (`outputs/split1` and `outputs/split2`).
+This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_Clock_CpGs.txt`. It also saves the unadjusted and purity-adjusted beta values of the fCpG sites (*cohort1.methyl.clock_sites.tsv* and *cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv* in *official_indir*/TARGET), and runs the sensitivity analysis, in which the tumors are randomly split into two halves and fCpGs are selected separately in each half (`outputs/split1` and `outputs/split2`).
 
 ### 4. Process Supplementary Data
 
@@ -261,7 +267,7 @@ This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_C
 
 A Gaussian mixture model is fit to each tumor's beta values in order to sample from the posterior of the mitotic age $\phi$. This requires the R library rstan, so activate the rstan environment first.
 
-The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all four of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
+The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all five of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
 
 TARGET cohort:
 ```
@@ -280,7 +286,12 @@ bash bin/Run_GMM_STAN_TARGET_SPLIT1.sh
 bash bin/Run_GMM_STAN_TARGET_SPLIT2.sh
 ```
 
-Each run takes a few hours. Progress is written to a file in `5. Gaussian Mixture Model`, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv* and *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*.
+TARGET cohort, purity-adjusted beta values (from steps 2d and 3):
+```
+bash bin/Run_GMM_STAN_TARGET_ADJUSTED.sh
+```
+
+Each run takes a few hours. Progress is written to a file in `5. Gaussian Mixture Model`, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv*, *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv* and *ADJUSTED.TARGET.GMM_results.csv*.
 
 ### 6. Main Analysis
 
@@ -288,7 +299,7 @@ All files for this stage are inside `6. Main Analysis`. Run the steps in order.
 
 #### a. Data processing
 
-After all four GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages to the clinical tables and saves the patient characteristics summary table.
+After all five GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages (including the purity-adjusted mitotic age, *phi.adjusted*) to the clinical tables and saves the patient characteristics summary tables.
 
 #### b. Proliferation scores
 
