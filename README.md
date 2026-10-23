@@ -295,13 +295,13 @@ After all four GMM runs have finished, open the notebook *Pipeline.ipynb* and ru
 1. Open *NBL_Proliferation_Scores.Rmd* in RStudio and click *Knit*. This calculates proliferation scores from the gene expression data.
 2. Open *NBL_Predict_Prolieration_Score.Rmd* in RStudio and click *Knit*. This predicts proliferation scores from DNA methylation for the tumors without gene expression data.
 
-#### c. Mitotic age and covariate analysis
+#### c. Tumor calendar age analysis
 
-Open the notebook *Make Figures.ipynb* and run all cells.
+Open the notebook *Estimate Ages.ipynb* and run all cells. This requires the proliferation scores from step b, and saves the clinical table with the calendar age estimates (*clinical.processed.withCalendarAges.tsv*).
 
-#### d. Tumor calendar age analysis
+#### d. Mitotic age and covariate analysis
 
-Open the notebook *Estimate Ages.ipynb* and run all cells. This requires the proliferation scores from step b.
+Open the notebook *Make Figures.ipynb* and run all cells. This requires the clinical table saved by *Estimate Ages.ipynb* in step c.
 
 #### e. Survival analysis
 
