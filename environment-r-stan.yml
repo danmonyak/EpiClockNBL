@@ -1,0 +1,21 @@
+# Stan R environment for the EpiClockNBL pipeline: the Gaussian mixture model
+# (stage 5).
+# Conda provides R and the compiled Stan packages; the remaining R packages are
+# installed from the renv lockfile renv-locks/stan.lock.
+#
+# Create with:   conda env create -f environment-r-stan.yml
+# Activate with: conda activate epiclocknbl-stan
+# Then, in R:    renv::restore(lockfile = "renv-locks/stan.lock", library = .libPaths()[1], prompt = FALSE)
+name: epiclocknbl-stan
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - r-base=4.5.3
+  - r-renv=1.3.1
+  - r-rstan=2.32.7
+  - r-stanheaders=2.32.10
+  - r-bayesplot=1.15.0
+  - r-dplyr=1.2.1
+  - r-ggplot2=4.0.3
+  - pandoc=3.10
