@@ -31,6 +31,8 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 | `config.json.example` | Template for the machine-specific `config.json` |
 | `environment.yml` | Conda environment with the pinned Python dependencies |
 | `conda-lock.yml`, `conda-locks/` | Fully resolved lock files for the Python environment |
+| `environment-r-general.yml`, `environment-r-stan.yml` | Conda environments for the two R environments |
+| `renv-locks/` | renv lockfiles with the exact R package versions for the two R environments |
 
 ## Requirements
 
@@ -49,46 +51,14 @@ Fully resolved lock files, which record the exact version of every package inclu
 
 ### R packages
 
-**It is highly recommended to create two separate conda environments for R: one for most tasks, and one only for running rstan**, which can have installation and functionality issues.
+The R code uses two separate R environments, both created with conda: a general one for most tasks, and one only for running rstan (the Gaussian mixture model, stage 5), which can have installation and functionality issues. The R packages and their exact versions are recorded in [renv](https://rstudio.github.io/renv/) lockfiles:
 
-General R environment:
+| Environment | Conda file | renv lockfile | Used for |
+|---|---|---|---|
+| General | `environment-r-general.yml` | `renv-locks/general.lock` | Stages 2, 6 and 7 |
+| Stan | `environment-r-stan.yml` | `renv-locks/stan.lock` | Stage 5 |
 
-- BiocFileCache
-- DESeq2
-- GSEABase
-- GSVA
-- IlluminaHumanMethylationEPICanno.ilm10b4.hg19
-- dplyr
-- ggfortify
-- ggplot2
-- ggsci
-- glmnet
-- jsonlite
-- kableExtra
-- latex2exp
-- msigdbr
-- plyr
-- readxl
-- remotes
-- reshape2
-- rmarkdown
-- sesame
-- sesameData
-- survival
-- tibble
-- tidyr
-
-A forked version of `TCGAbiolinks` is also needed; it is installed by a setup script in [stage 2](#2-target-retrieval).
-
-rstan environment:
-
-- bayesplot
-- dplyr
-- ggplot2
-- jsonlite
-- reshape2
-- rmarkdown
-- rstan
+Each conda file provides R 4.5.3, `make`, pandoc, and the compiled CRAN packages at the versions in its lockfile, so that they don't need to be compiled. renv then installs the remaining packages from the lockfile: CRAN packages, Bioconductor 3.22 packages, and the forked version of `TCGAbiolinks` that the TARGET retrieval needs ([stage 2](#2-target-retrieval)). Three compiled packages in the general environment (irlba, mclust and quadprog) are installed by renv from a dated [Posit Package Manager](https://packagemanager.posit.co) snapshot of CRAN instead, because conda-forge's Windows builds of them fail to load. See [Setup](#setup) for the commands.
 
 ## Setup
 
@@ -131,7 +101,35 @@ C:\PATH\TO\REPO\PARENT\DIR\EpiClockNBL
 
 Always start Jupyter, and run Python scripts, from inside the repository directory (or one of its subdirectories).
 
-### 3. R `repo_dir` variable
+### 3. R environments
+
+Create both R environments. For each one, create the conda environment, then install the R packages from its lockfile with renv. Run the commands from inside the repository directory.
+
+General environment (stages 2, 6 and 7):
+
+```
+conda env create -f environment-r-general.yml
+conda activate epiclocknbl-r
+Rscript -e "renv::restore(project = tempdir(), lockfile = 'renv-locks/general.lock', library = .libPaths()[1], prompt = FALSE)"
+```
+
+Stan environment (stage 5):
+
+```
+conda env create -f environment-r-stan.yml
+conda activate epiclocknbl-stan
+Rscript -e "renv::restore(project = tempdir(), lockfile = 'renv-locks/stan.lock', library = .libPaths()[1], prompt = FALSE)"
+```
+
+On Windows, also install the Unix-style build tools that R uses to compile code (for example the Stan model in stage 5) into each environment, right after creating it and before running `renv::restore()`:
+
+```
+conda install -c conda-forge m2-make m2-bash m2-coreutils m2-sed
+```
+
+Restoring the general environment installs more than 200 packages and takes a while.
+
+### 4. R `repo_dir` variable
 
 The R Markdown files expect a variable called `repo_dir`. **Repeat the following for each R environment.**
 
@@ -153,7 +151,7 @@ or on Windows:
 repo_dir <- 'C:\\PATH\\TO\\REPO\\PARENT\\DIR\\EpiClockNBL'
 ```
 
-### 4. `config.json`
+### 5. `config.json`
 
 Copy `config.json.example`, rename the copy to `config.json`, and fill in:
 
@@ -167,7 +165,7 @@ On Windows, use double backslashes in the paths:
 "official_indir": "C:\\PATH\\TO\\OFFICIAL_INDIR"
 ```
 
-### 5. Data directories
+### 6. Data directories
 
 Inside the *official_indir* directory, create three directories called `TARGET`, `Henrich` and `Other`. `TARGET` holds the discovery cohort data, `Henrich` holds the validation cohort data, and `Other` holds reference data (the blood cell-type methylation lookup table used in step 2d).
 
@@ -181,7 +179,7 @@ Run the stages in order. Each stage has a folder of the same name in the reposit
 | 2. TARGET Retrieval | Downloads TARGET-NBL data, builds the clinical table, and adjusts beta values for tumor purity | R Markdown, notebook, Rscript and the CIBERSORTx website |
 | 3. Select fCpGs | Selects the fCpG (clock) sites | Notebook |
 | 4. Process Supplementary Data | Prepares the validation cohort | Notebook |
-| 5. Gaussian Mixture Model | Estimates the mitotic age of each tumor | Rscript (rstan environment) |
+| 5. Gaussian Mixture Model | Estimates the mitotic age of each tumor | Rscript (stan R environment) |
 | 6. Main Analysis | Calendar ages, figures, survival | Notebooks and R Markdown |
 | 7. GSEA | Gene set enrichment analysis | R Markdown and the GSEA application |
 
@@ -212,7 +210,7 @@ From inside `1. Simulation`:
 
 #### 2a. Data retrieval
 
-1. From inside `2. TARGET Retrieval`, install the forked `TCGAbiolinks` package:
+1. Activate the general R environment (`epiclocknbl-r`). If you created it from its lockfile ([Setup](#3-r-environments)), the forked `TCGAbiolinks` package is already installed and you can skip to the next step. Otherwise, from inside `2. TARGET Retrieval`, install it:
    ```
    bash setup.sh
    ```
@@ -280,7 +278,7 @@ This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_C
 
 ### 5. Gaussian Mixture Model
 
-A Gaussian mixture model is fit to each tumor's beta values in order to sample from the posterior of the mitotic age $\phi$. This requires the R library rstan, so activate the rstan environment first.
+A Gaussian mixture model is fit to each tumor's beta values in order to sample from the posterior of the mitotic age $\phi$. This requires the R library rstan, so activate the stan R environment (`epiclocknbl-stan`) first.
 
 The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all five of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
 
