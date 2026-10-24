@@ -1,11 +1,15 @@
 # Stan R environment for the EpiClockNBL pipeline: the Gaussian mixture model
 # (stage 5).
-# Conda provides R and the compiled Stan packages; the remaining R packages are
-# installed from the renv lockfile renv-locks/stan.lock.
+# Conda provides R, make and pandoc, and every compiled CRAN package (including
+# rstan) at the version in the renv lockfile renv-locks/stan.lock (conda-forge
+# keeps builds of old versions, so these never need compiling). renv then
+# installs the remaining packages from the lockfile.
 #
 # Create with:   conda env create -f environment-r-stan.yml
 # Activate with: conda activate epiclocknbl-stan
-# Then, in R:    renv::restore(lockfile = "renv-locks/stan.lock", library = .libPaths()[1], prompt = FALSE)
+# On Windows:    conda install -c conda-forge m2-make m2-bash m2-coreutils m2-sed
+# Then, from the repository directory:
+#   Rscript -e "renv::restore(project = tempdir(), lockfile = 'renv-locks/stan.lock', library = .libPaths()[1], prompt = FALSE)"
 name: epiclocknbl-stan
 channels:
   - conda-forge
@@ -13,9 +17,47 @@ channels:
 dependencies:
   - r-base=4.5.3
   - r-renv=1.3.1
-  - r-rstan=2.32.7
-  - r-stanheaders=2.32.10
-  - r-bayesplot=1.15.0
-  - r-dplyr=1.2.1
-  - r-ggplot2=4.0.3
+  - make=4.4.1
   - pandoc=3.10
+  # Compiled CRAN packages, at the versions in the renv lockfile
+  - r-backports=1.5.1
+  - r-base64enc=0.1_6
+  - r-cachem=1.1.0
+  - r-checkmate=2.3.3
+  - r-cli=3.6.6
+  - r-digest=0.6.39
+  - r-dplyr=1.2.1
+  - r-farver=2.1.2
+  - r-fastmap=1.2.0
+  - r-fs=2.1.0
+  - r-glue=1.8.1
+  - r-htmltools=0.5.9
+  - r-isoband=0.3.0
+  - r-jsonlite=2.0.0
+  - r-magrittr=2.0.5
+  - r-matrixstats=1.5.0
+  - r-mime=0.13
+  - r-plyr=1.8.9
+  - r-processx=3.9.0
+  - r-ps=1.9.3
+  - r-purrr=1.2.2
+  - r-quickjsr=1.10.0
+  - r-rappdirs=0.3.4
+  - r-rcpp=1.1.2
+  - r-rcppeigen=0.3.4.0.2
+  - r-rcppparallel=5.1.11_2
+  - r-reshape2=1.4.5
+  - r-rlang=1.3.0
+  - r-rstan=2.32.7
+  - r-s7=0.2.2
+  - r-sass=0.4.10
+  - r-stanheaders=2.32.10
+  - r-stringi=1.8.7
+  - r-tensora=0.36.2.1
+  - r-tibble=3.3.1
+  - r-tidyr=1.3.2
+  - r-tidyselect=1.2.1
+  - r-utf8=1.2.6
+  - r-vctrs=0.7.3
+  - r-xfun=0.59
+  - r-yaml=2.3.12

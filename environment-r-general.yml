@@ -1,11 +1,15 @@
 # General R environment for the EpiClockNBL pipeline: all R code except the
 # Gaussian mixture model (stages 2, 6 and 7).
-# Conda provides R itself; the R packages are installed from the renv lockfile
-# renv-locks/general.lock.
+# Conda provides R, make and pandoc, and every compiled CRAN package at the
+# version in the renv lockfile renv-locks/general.lock (conda-forge keeps builds
+# of old versions, so these never need compiling). renv then installs the
+# remaining packages from the lockfile.
 #
 # Create with:   conda env create -f environment-r-general.yml
 # Activate with: conda activate epiclocknbl-r
-# Then, in R:    renv::restore(lockfile = "renv-locks/general.lock", library = .libPaths()[1], prompt = FALSE)
+# On Windows:    conda install -c conda-forge m2-make m2-bash m2-coreutils m2-sed
+# Then, from the repository directory:
+#   Rscript -e "renv::restore(project = tempdir(), lockfile = 'renv-locks/general.lock', library = .libPaths()[1], prompt = FALSE)"
 name: epiclocknbl-r
 channels:
   - conda-forge
@@ -13,4 +17,80 @@ channels:
 dependencies:
   - r-base=4.5.3
   - r-renv=1.3.1
+  - make=4.4.1
   - pandoc=3.10
+  # Compiled CRAN packages, at the versions in the renv lockfile. irlba, mclust and
+  # quadprog are left to renv, because conda-forge's Windows builds of them fail to
+  # load; the lockfile gets them from a dated Posit Package Manager snapshot.
+  - r-askpass=1.2.1
+  - r-base64enc=0.1_6
+  - r-bit64=4.8.2
+  - r-bit=4.6.0
+  - r-bitops=1.0_9
+  - r-cachem=1.1.0
+  - r-cli=3.6.6
+  - r-colorspace=2.1_2
+  - r-commonmark=2.0.0
+  - r-curl=7.1.0
+  - r-data.table=1.18.4
+  - r-digest=0.6.39
+  - r-dplyr=1.2.1
+  - r-farver=2.1.2
+  - r-fastmap=1.2.0
+  - r-filelock=1.0.3
+  - r-fs=2.1.0
+  - r-glmnet=5.0
+  - r-glue=1.8.1
+  - r-htmltools=0.5.9
+  - r-httpuv=1.6.16
+  - r-isoband=0.3.0
+  - r-jsonlite=2.0.0
+  - r-later=1.4.8
+  - r-lattice=0.22_9
+  - r-locfit=1.5_9.12
+  - r-magick=2.9.1
+  - r-magrittr=2.0.5
+  - r-mapproj=1.2.12
+  - r-maps=3.4.3
+  - r-mass=7.3_65
+  - r-matrix=1.7_5
+  - r-matrixstats=1.5.0
+  - r-memuse=4.2_3
+  - r-mime=0.13
+  - r-nlme=3.1_169
+  - r-openssl=2.4.1
+  - r-plyr=1.8.9
+  - r-png=0.1_9
+  - r-purrr=1.2.2
+  - r-rappdirs=0.3.4
+  - r-rcpp=1.1.1_1.1
+  - r-rcpparmadillo=15.2.6_1
+  - r-rcppeigen=0.3.4.0.2
+  - r-rcurl=1.98_1.18
+  - r-readr=2.2.0
+  - r-readxl=1.5.0.1
+  - r-reshape2=1.4.5
+  - r-rjson=0.2.23
+  - r-rlang=1.2.0
+  - r-rsqlite=3.52.0
+  - r-s7=0.2.2
+  - r-sass=0.4.10
+  - r-sourcetools=0.1.7_2
+  - r-statmod=1.5.2
+  - r-stringi=1.8.7
+  - r-survival=3.8_6
+  - r-svglite=2.2.2
+  - r-sys=3.4.3
+  - r-systemfonts=1.3.2
+  - r-textshaping=1.0.5
+  - r-tibble=3.3.1
+  - r-tidyr=1.3.2
+  - r-tidyselect=1.2.1
+  - r-tzdb=0.5.0
+  - r-utf8=1.2.6
+  - r-vctrs=0.7.3
+  - r-vroom=1.7.1
+  - r-xfun=0.57
+  - r-xml2=1.5.2
+  - r-xml=3.99_0.25
+  - r-yaml=2.3.12
