@@ -20,6 +20,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = NA)
 library(jsonlite)
+library(tidyverse)
 
 source('util.R')
 
@@ -187,6 +188,24 @@ for (i in 1L:length(grouping_to_wbc)) {
   }
 }
 cat("This realignment worked:", all(tst), "\n")
+```
+#### Plot distributions of absolute proportions of immune cell types
+```{r plot_cibersort_proportions, fig.width = 7, fig.height = 6}
+components <- as.character(unlist(grouping_to_wbc))
+
+# One row per tumor and cell type
+cibersort_long <- cibersort[, c("Mixture", components)] %>%
+  pivot_longer(-Mixture, names_to = "cell_type", values_to = "proportion") %>%
+  mutate(
+    cell_type = trimws(gsub("\\.+", " ", cell_type)),            # e.g. T.cells.CD8 -> T cells CD8
+    cell_type = reorder(cell_type, proportion, FUN = median)     # order cell types by median proportion
+  )
+
+ggplot(cibersort_long, aes(x = proportion, y = cell_type)) +
+  geom_boxplot(outlier.size = 0.8) +
+  labs(x = "Absolute proportion (CIBERSORTx)", y = NULL,
+       title = sprintf("Immune cell types in %d tumors", nrow(cibersort))) +
+  theme_classic()
 ```
 
 #### Calculate site specific beta values
