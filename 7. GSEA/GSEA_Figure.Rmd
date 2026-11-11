@@ -5,7 +5,6 @@ date: "`r Sys.Date()`"
 output: html_document
 params:
   cancer_type: "NBL"
-  cls_file: "neuroblastoma_gmm_phi.cls"
   GSEA_output_dir_name: "original.Gsea.1783612994726"
   pos_file: "gsea_report_for_neuroblastoma_gmm_phi_pos_1783612994726.tsv"
   neg_file: "gsea_report_for_neuroblastoma_gmm_phi_neg_1783612994726.tsv"
@@ -166,8 +165,13 @@ plot_data <- function(data, name) {
   text_younger <- grid::textGrob("\u2190 Younger", gp=grid::gpar(fontsize=6, fontface="bold"))
   text_older <- grid::textGrob("Older \u2192", gp=grid::gpar(fontsize=6, fontface="bold"))
   
-  data_str <- readLines(file.path(in_dir, params$cls_file))[-(1:2)]
-  num_tumors <- length(unlist(gregexpr("\t", data_str))) + 1
+  # Number of tumors, from the copy of the phenotype (.cls) file that GSEA saves in its output folder
+  # The values are on the first line that is not blank or a comment, separated by spaces
+  cls_path <- list.files(file.path(in_dir, params$GSEA_output_dir_name, "edb"), pattern = "\\.cls$", full.names = TRUE)
+  stopifnot(length(cls_path) == 1)
+  cls_lines <- trimws(readLines(cls_path))
+  values_line <- cls_lines[cls_lines != "" & !startsWith(cls_lines, "#")][1]
+  num_tumors <- length(strsplit(values_line, "[[:space:]]+")[[1]])
 
   gg <- suppressWarnings(
     ggplot(data, aes(NES, fill = Process)) +
