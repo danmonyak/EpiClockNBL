@@ -325,7 +325,7 @@ def getCorrelation(sample_annotations, var_x, var_y='methStdev', only_pure=False
 def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True, use_samples=None,
                         outdir='.', outfile=True, ax=None, text_x=0, text_y=0,
                         scatter_kws={}, line_kws={}, custom_title=None, xlabel=None, ylabel=None, bbox_dict=None, color='blue',
-                       figsize=(10, 10), labelfontsize=20, ticksfontsize=10, s=1, sf=1):
+                       figsize=(10, 10), labelfontsize=20, ticksfontsize=10, s=1, sf=1, file_format='pdf', title=False):
     """
     Create scatter plot with a line of best fit from a sample annotations DataFrame
     Plot two numerical variables against each other
@@ -374,6 +374,10 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     sf : float
         scale factor
         change to alter the size of a figure - scales everything proportionally
+    file_format : str
+        'pdf', 'png', 'svg', etc.
+    title : boolean
+        if True, make the title of each individual plot the name of the dataframe
         
     Notes
     -----
@@ -396,9 +400,9 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     # Add to mask and set outfile name
     if restrict:
         use_samples_mask &= sample_annotations['in_analysis_dataset']
-        outfile_name = f'{sample_annotations.name}-{var_x}-{var_y}-pure.pdf'
+        outfile_name = f'{sample_annotations.name}-{var_x}-{var_y}-pure.{file_format}'
     else:
-        outfile_name = f'{sample_annotations.name}-{var_x}-{var_y}.pdf'
+        outfile_name = f'{sample_annotations.name}-{var_x}-{var_y}.{file_format}'
     
     # Set use_samples if it is None
     if use_samples is None:
@@ -433,7 +437,8 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     else:
         ax.set_ylabel(ylabel, fontsize=labelfontsize * sf)
 
-    ax.set_title(sample_annotations.name, fontsize=labelfontsize * sf)
+    if title:
+        ax.set_title(sample_annotations.name, fontsize=labelfontsize * sf)
     ax.tick_params(axis='both', labelsize=ticksfontsize * sf, width=sf, length=8 * sf)
     
     # Put (R = ...) on the plot
@@ -452,7 +457,7 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
         
     # Save plot
     if outfile:
-        fig.savefig(os.path.join(outdir, outfile_name), format='pdf', pad_inches=0.1)
+        fig.savefig(os.path.join(outdir, outfile_name), format=file_format, pad_inches=0.1)
         
         
 # def plotTumorWise(data, CpG_list=None, sample_type='tumor', sample_list=None, n_samps=30, ncols=3, suptitle='random pick of samples', extra_titles=None, title_formats=None, xlabel='Beta', random_seed=None, data_obj='beta_values_SELECTION',
