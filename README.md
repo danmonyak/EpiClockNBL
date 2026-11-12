@@ -331,10 +331,6 @@ Open the notebook *Make Figures.ipynb* and run all cells. This requires the clin
 
 Open *NBL_survival.Rmd* in RStudio and click *Knit*. This makes the Kaplan-Meier curves and fits Cox models of overall survival, with and without tumor purity (LUMP) as a covariate.
 
-#### f. PCA sensitivity analysis
-
-Open the notebook *Sensitivity_Analysis_PCA.ipynb* and run all cells.
-
 ### 7. GSEA
 
 All files for this stage are inside `7. GSEA`.
