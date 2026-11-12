@@ -43,9 +43,7 @@ survival_data <- data.frame(
   mitotic.age=scale(clinical$phi),                # Use phi as tumor mitotic age - scaled
   mitotic.age.split1=scale(clinical$phi.split1),
   mitotic.age.split2=scale(clinical$phi.split2),
-  # DELETE
   LUMP=scale(clinical$LUMP),
-  #
   inss_stage=clinical$inss_stage,
   cog_neuroblastoma_risk_group=clinical$cog_neuroblastoma_risk_group,
   patient_age=clinical$age_at_diagnosis / 365,
