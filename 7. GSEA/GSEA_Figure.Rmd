@@ -4,7 +4,6 @@ author: "Shannon T. Holloway"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  cancer_type: "NBL"
   GSEA_output_dir_name: "original.Gsea.1783612994726"
   pos_file: "gsea_report_for_neuroblastoma_gmm_phi_pos_1783612994726.tsv"
   neg_file: "gsea_report_for_neuroblastoma_gmm_phi_neg_1783612994726.tsv"
@@ -30,6 +29,9 @@ in_dir <- file.path(proj_dir, 'GSEA')
 ```
 
 ```{r echo = FALSE}
+XLAB_ANNOTATIONS_YPOS <- -4.1
+XLAB_ANNOTATIONS_FONTSIZE <- 9
+
 capitalizeEachWord <- function(s) {
   paste(
     sapply(
@@ -162,8 +164,8 @@ plot_data <- function(data, name) {
   
   q_labels <- paste0("", q_labels)
   
-  text_younger <- grid::textGrob("\u2190 Younger", gp=grid::gpar(fontsize=6, fontface="bold"))
-  text_older <- grid::textGrob("Older \u2192", gp=grid::gpar(fontsize=6, fontface="bold"))
+  text_younger <- grid::textGrob("\u2190 Younger", gp=grid::gpar(fontsize=XLAB_ANNOTATIONS_FONTSIZE, fontface="bold"))
+  text_older <- grid::textGrob("Older \u2192", gp=grid::gpar(fontsize=XLAB_ANNOTATIONS_FONTSIZE, fontface="bold"))
   
   # Number of tumors, from the copy of the phenotype (.cls) file that GSEA saves in its output folder
   # The values are on the first line that is not blank or a comment, separated by spaces
@@ -177,13 +179,13 @@ plot_data <- function(data, name) {
     ggplot(data, aes(NES, fill = Process)) +
     # geom_rect(aes(ymin = order - 0.4, ymax = order + 0.4, xmin = 0, xmax = NES)) +
     geom_rect(aes(ymin = order - 0.4, ymax = order + 0.4, xmin = 0, xmax = NES)) +
-    labs(title = TeX(paste0(params$cancer_type, " Gene Set Analysis - ", name, " Phenotype ", "(n = ", num_tumors, ")"))) +
+    labs(title = TeX(paste0("GSEA - ", name, " Phenotype ", "(n = ", num_tumors, ")"))) +
     ylab("Hallmark Pathway") +
     xlab("Normalized Enrichment Score") +
     scale_y_continuous(breaks = 1:nrow(data), labels = data$NAME) + 
     scale_fill_manual(values = colors)+
-    annotation_custom(text_younger, xmax = -1, ymin = -4.4, ymax = -4.4) +
-    annotation_custom(text_older, xmin = 1, ymin = -4.4, ymax = -4.4) +
+    annotation_custom(text_younger, xmax = -1, ymin = XLAB_ANNOTATIONS_YPOS, ymax = XLAB_ANNOTATIONS_YPOS) +
+    annotation_custom(text_older, xmin = 1, ymin = XLAB_ANNOTATIONS_YPOS, ymax = XLAB_ANNOTATIONS_YPOS) +
     annotate(geom = "text",   # this annotation will likely be removed for publication
              x = c(rep(-1, sum(data$NES > 0)),
                    rep( 1, sum(data$NES < 0))), 
@@ -200,7 +202,9 @@ plot_data <- function(data, name) {
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
-          axis.line = element_line(colour = "black")))  + 
+          axis.line = element_line(colour = "black"),
+          plot.title = element_text(hjust=0.8))
+    )  + 
     coord_cartesian(clip="off")
   
   filename <- "gsea_plot.svg"
@@ -208,7 +212,7 @@ plot_data <- function(data, name) {
     filename <- paste(params$prefix, "gsea_plot.svg", sep=".")
   }
   ggsave(file.path(figure_outdir, filename), plot = gg,
-         width=7, height=8, device='svg')
+         width=7, height=7.5, device='svg')
   gg
 }
 ```
