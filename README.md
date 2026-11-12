@@ -312,7 +312,7 @@ All files for this stage are inside `6. Main Analysis`. Run the steps in order.
 
 #### a. Data processing
 
-After all five GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages (including the purity-adjusted mitotic age, *phi.adjusted*) to the clinical tables and saves the patient characteristics summary tables.
+After all five GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages (including the purity-adjusted mitotic age, *phi.adjusted*) to the clinical tables and saves the patient characteristics summary tables (*TARGET_patient_characteristics.xlsx* and *Henrich_patient_characteristics.xlsx* in `6. Main Analysis`).
 
 #### b. Proliferation scores
 
