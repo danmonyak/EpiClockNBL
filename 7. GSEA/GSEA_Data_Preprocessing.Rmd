@@ -10,7 +10,7 @@ params:
   GDCdata_dir: "GDC_data"
   count_data_file: "cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
   # c_beta_file: "TARGET/NBL.gmm_phi.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
-  clinical_file: "clinical.processed.withAges.tsv"
+  clinical_file: "clinical.processed.withCalendarAges.tsv"
   output_gct_file: "neuroblastoma_deseq_scale_factor"
   output_cls_file: "neuroblastoma_gmm_phi"
   phi_var: "phi"
@@ -19,7 +19,6 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(DESeq2)
-# library(TCGAbiolinks)
 
 library(jsonlite)
 
@@ -67,6 +66,7 @@ We load the c-beta values here to ensure that the final normalized count matrix 
 ```{r read_c_beta}
 # c_beta_measured <- read.table(file.path(proj_dir, params$c_beta_file), sep = "\t", header = FALSE)
 clinical <- read.table(file.path(proj_dir, params$clinical_file), sep='\t', header=T)
+clinical <- clinical[!is.na(clinical[, params$phi_var]), ]
 c_beta_measured <- clinical
 # rownames(c_beta_measured) <- c_beta_measured$sampleID
 c_beta_measured <- c_beta_measured[, c('sampleID', params$phi_var)]
