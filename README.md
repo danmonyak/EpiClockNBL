@@ -325,11 +325,11 @@ Open the notebook *Estimate Ages.ipynb* and run all cells. This requires the pro
 
 #### d. Mitotic age and covariate analysis
 
-Open the notebook *Make Figures.ipynb* and run all cells. This requires the clinical table saved by *Estimate Ages.ipynb* in step c.
+Open the notebook *Make Figures.ipynb* and run all cells. This requires the clinical table saved by *Estimate Ages.ipynb* in step c. Besides the main figures, it plots the mitotic age and the purity-adjusted mitotic age against tumor purity (LUMP), and repeats the covariate analysis on the tumors with LUMP ≥ 0.8.
 
 #### e. Survival analysis
 
-Open *NBL_survival.Rmd* in RStudio and click *Knit*.
+Open *NBL_survival.Rmd* in RStudio and click *Knit*. This makes the Kaplan-Meier curves and fits Cox models of overall survival, with and without tumor purity (LUMP) as a covariate.
 
 #### f. PCA sensitivity analysis
 
@@ -400,6 +400,22 @@ Repeat steps a to c for each half of the split, with the following changes (show
 2. When loading the files into GSEA, load *neuroblastoma_deseq_scale_factor.split1* and *neuroblastoma_gmm_phi.split1*.
 3. Enter `split1` as the *Analysis name* under *Basic fields*.
 4. When knitting *GSEA_Figure.Rmd*, enter `split1` for the *prefix* parameter.
+
+#### e. Purity-adjusted mitotic age
+
+Repeat steps a to c using the purity-adjusted mitotic age, with the following changes.
+
+1. Knit *GSEA_Data_Preprocessing.Rmd* using *Knit with Parameters* and set:
+
+   | Parameter | Value |
+   |---|---|
+   | output_gct_file | neuroblastoma_deseq_scale_factor.adjusted |
+   | output_cls_file | neuroblastoma_gmm_phi.adjusted |
+   | phi_var | phi.adjusted |
+
+2. When loading the files into GSEA, load *neuroblastoma_deseq_scale_factor.adjusted* and *neuroblastoma_gmm_phi.adjusted*.
+3. Enter `adjusted` as the *Analysis name* under *Basic fields*.
+4. When knitting *GSEA_Figure.Rmd*, enter `adjusted` for the *prefix* parameter.
 
 ## Outputs and re-running
 
