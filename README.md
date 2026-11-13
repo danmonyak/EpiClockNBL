@@ -28,6 +28,7 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 | `EpiClockNBL/` | Python package with the pipeline code that the notebooks call |
 | `1. Simulation/` … `7. GSEA/` | Pipeline stages, run in order (see [Pipeline](#pipeline)) |
 | `data/` | Small reference files (LUMP CpGs, Hallmark pathway names, protein-coding genes) |
+| `save_util.R` | R helper functions for saving output files without overwriting existing data |
 | `config.json.example` | Template for the machine-specific `config.json` |
 | `environment.yml` | Conda environment with the pinned Python dependencies |
 | `conda-lock.yml`, `conda-locks/` | Fully resolved lock files for the Python environment |
@@ -418,3 +419,7 @@ Repeat steps a to c using the purity-adjusted mitotic age, with the following ch
 - Figures are saved to `figures_revision` in the repository.
 - Downloaded and intermediate data is saved under *official_indir*/TARGET and *official_indir*/Henrich.
 - Several steps refuse to overwrite an existing output file if the new result differs from it, and raise an error instead. To regenerate such an output on purpose, delete the existing file first.
+- The long-running steps check for their output files before starting, so they don't fail at the end:
+  - *Data_Prep.Rmd* (step 2a) and the GMM runs (stage 5) stop right away if their output files already exist.
+  - *Beta_adjustment.Rmd* (step 2d) and *NBL_Predict_Prolieration_Score.Rmd* (step 6b) also stop right away. To rerun one of them anyway and check that the results match the existing file, use *Knit with Parameters* and set *compare_existing* to `TRUE`.
+  - The fCpG selection (stage 3) prints a note at the start if its output files already exist, and compares the new results with them at the end.
