@@ -247,7 +247,17 @@ cat("This adjustment results in ", mean(beta_adj1_tumor < 0.0 | beta_adj1_tumor 
 # truncation to physical values
 beta_adj1_tumor <- pmin(pmax(beta_adj1_tumor, 0.0), 1.0)
 
-write.table(beta_adj1_tumor,
-            file = file.path(save_path, params$output_filename),
-            sep = "\t")
+# Save, but don't overwrite an existing file that has different values
+writeWithoutOverwrite(
+  file.path(save_path, params$output_filename),
+  beta_adj1_tumor,
+  writeFunc = function(filepath, data) write.table(data, file = filepath, sep = "\t"),
+  readFunc = function(filepath) data.matrix(read.table(filepath, sep = "\t", header = TRUE,
+                                                       check.names = FALSE)),
+  # Same sites and tumors, and the same values (missing in the same places)
+  compareFunc = function(data, existing_data) {
+    identical(dimnames(data), dimnames(existing_data)) &&
+      isTRUE(all.equal(data, existing_data, tolerance = 1e-6, check.attributes = FALSE))
+  }
+)
 ```
