@@ -12,6 +12,7 @@ params:
   lookup_filename: "GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
   output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
+  compare_existing: FALSE # if TRUE, run even if the output file exists, and compare the results with it at the end
 editor_options:
   markdown:
     wrap: 72
@@ -25,6 +26,7 @@ library(tidyr)
 library(dplyr)
 
 source('util.R')
+source(file.path(repo_dir, 'save_util.R'))
 
 consts <- read_json(file.path(repo_dir, 'config.json'))
 
@@ -34,6 +36,12 @@ if (consts[["Windows"]]) {
   official_indir <- consts[['official_indir']]
 }
 save_path <- file.path(official_indir, params$save_path)
+
+# Stop now, instead of after the adjustment, if the output file already exists
+if (!params$compare_existing) {
+  stopIfOutputsExist(file.path(save_path, params$output_filename),
+                     advice = "or knit with parameters and set compare_existing to TRUE to rerun and compare the results with the existing file.")
+}
 ```
 
 #  {.tabset}
