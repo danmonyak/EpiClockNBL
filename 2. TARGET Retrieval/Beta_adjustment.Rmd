@@ -112,22 +112,27 @@ cat("All current tumors are in the purity dataset:",
 
 #### Definition
 
-The average beta value at each CpG site is defined as
+For each tumor, the purity-adjusted beta value of the tumor cells at
+CpG site $k$, $\beta_{k}^{t}$, is defined as
 
 $$
 \beta_{k}^{t} = \frac{1}{p}\left[\beta_{k}^{m} - (1 - p) ~ \beta^{imp}_{k}\right],
 $$
 
-where $p$ is the tumor purity, $\beta_{k}^{m}$ is the
-measured beta value at CpG site $k$. In this adjustment, we estimate
-$\beta_{k}^{imp}$ as
+where $p$ is the tumor's purity (LUMP), $\beta_{k}^{m}$ is the measured
+beta value at CpG site $k$, and $\beta_{k}^{imp}$ is the beta value of
+the infiltrating immune cells at site $k$, estimated as
 
 $$
 \beta^{imp}_{k} = \sum_{l = 1}^{22} \frac{s_{l} * \beta_{l,k}}{S}.
-$$ Here, $s_{l}$ is the absolute score of the $l^{th}$ cell-type and $S$
-is the absolute score of the tumor, both taken from the CIBERSORT
-analysis; and $\beta_{l,k}$ is the average methylation for CpG site $k$
-in the $l^{th}$ cell-type taken from the WBC lookup table.
+$$
+
+Here, $s_{l}$ is the absolute score of the $l^{th}$ LM22 cell type and
+$S$ is the tumor's absolute score (the sum of the 22 cell-type scores),
+both from the CIBERSORTx analysis, so the weights $s_{l}/S$ sum to 1.
+$\beta_{l,k}$ is the average methylation at site $k$ of the blood cell
+type in the WBC lookup table that LM22 cell type $l$ is mapped to (see
+the mapping below). Adjusted values outside $[0, 1]$ are truncated.
 
 #### Beta Value Lookup
 
