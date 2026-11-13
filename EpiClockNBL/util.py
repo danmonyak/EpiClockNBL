@@ -743,6 +743,21 @@ def writeWithoutOverwrite(filepath, data,
     if verbose:
         print(filepath)
 
+def noteExistingOutputs(filepaths):
+    '''
+    Print a note listing the output files that already exist
+    Use at the start of a long-running step that saves with writeWithoutOverwrite,
+    so it is clear from the start that the results will be compared with these files
+
+    filepaths: list of str
+    '''
+    existing = [fp for fp in filepaths if os.path.exists(fp)]
+    if existing:
+        print('Note: these output files already exist, and the new results will be compared with them before saving:')
+        for fp in existing:
+            print(f'  {fp}')
+        print('Delete them first to save new results.\n')
+
 def safe_filename(s):
     # Convert accented chars into ASCII equivalents
     s = unicodedata.normalize('NFKD', s)

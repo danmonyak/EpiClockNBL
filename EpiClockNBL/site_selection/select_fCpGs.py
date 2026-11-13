@@ -36,6 +36,14 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
         print('#'*100)
         time.sleep(1)
 
+    # Output files
+    Clock_CpGs_filepath = os.path.join(output_dir, 'NBL_Clock_CpGs.txt')
+    clock_sites_outfile_path = os.path.join(outdir, 'cohort1.methyl.clock_sites.tsv')
+    adjusted_clock_sites_outfile_path = os.path.join(outdir, 'cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv')
+
+    # Say now if the output files already exist, since they are compared with the new results at the end
+    nbl_util.noteExistingOutputs([Clock_CpGs_filepath, clock_sites_outfile_path, adjusted_clock_sites_outfile_path])
+
     ####################################################################################
     ####################################################################################
 
@@ -194,8 +202,6 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     Clock_CpGs = most_random_sites_nonIterNotStuck
 
     ## Save Clock CpG list
-    Clock_CpGs_filepath = os.path.join(output_dir, f'NBL_Clock_CpGs.txt')
-
     # Save Clock sites, don't overwrite existing file
     if os.path.exists(Clock_CpGs_filepath):
         existing_set = np.loadtxt(Clock_CpGs_filepath, dtype=str)
@@ -216,18 +222,31 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     # else:
     #     c_beta_final_samples.to_csv(c_beta_filepath, sep='\t', header=False)
 
-    # Save beta values of Clock sites
-    outfile_path = os.path.join(outdir, f'cohort1.methyl.clock_sites.tsv')
-    beta_values_unbiased_sites.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
+    # Beta values are compared after rounding, with missing values in the same places
+    beta_values_match = lambda new, old: (old.round(5).fillna(0) == new.round(5).fillna(0)).all(axis=None)
 
-    # Save purity-adjusted beta values of Clock sites
+    # Save beta values of Clock sites, don't overwrite existing file with different values
+    nbl_util.writeWithoutOverwrite(
+        clock_sites_outfile_path,
+        beta_values_unbiased_sites.loc[Clock_CpGs],
+        lambda filepath, data: data.to_csv(filepath, sep='\t'),
+        lambda filepath: pd.read_table(filepath, index_col=0),
+        compareFunc=beta_values_match
+    )
+
+    # Save purity-adjusted beta values of Clock sites, don't overwrite existing file with different values
     beta_values_adjusted = pd.read_table(
         os.path.join(proj_dir, 'cohort1.analysis_tumors.methyl_adjusted.tsv'),
         index_col=0
     )
     beta_values_adjusted = beta_values_adjusted.rename(columns=nbl_util.getSampleID)
-    outfile_path = os.path.join(outdir, f'cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv')
-    beta_values_adjusted.loc[Clock_CpGs].to_csv(outfile_path, sep='\t')
+    nbl_util.writeWithoutOverwrite(
+        adjusted_clock_sites_outfile_path,
+        beta_values_adjusted.loc[Clock_CpGs],
+        lambda filepath, data: data.to_csv(filepath, sep='\t'),
+        lambda filepath: pd.read_table(filepath, index_col=0),
+        compareFunc=beta_values_match
+    )
 
     if verbose:
         print('\nDONE')

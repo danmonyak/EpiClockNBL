@@ -31,6 +31,9 @@ def pipeline(verbose=True, make_figures=False,
         print('#'*100)
         time.sleep(1)
 
+    # Say now if the output files already exist, since they are compared with the new results at the end
+    nbl_util.noteExistingOutputs([os.path.join(outdir, finame) for finame in filenames])
+
     # Directory setup
     if verbose:
         print('\nDirectory setup...', end=' ')
@@ -109,7 +112,13 @@ def pipeline(verbose=True, make_figures=False,
 
         unbiased_sites = gen_CpG_set(data, criteria=criteria, neutral_DNA_CpG_list=None)
         outfile_path = os.path.join(outdir, finame)
-        data['tumor']['beta_values_SELECTION'].loc[unbiased_sites].to_csv(outfile_path, sep='\t')
+        nbl_util.writeWithoutOverwrite(
+            outfile_path,
+            data['tumor']['beta_values_SELECTION'].loc[unbiased_sites],
+            lambda filepath, data: data.to_csv(filepath, sep='\t'),
+            lambda filepath: pd.read_table(filepath, index_col=0),
+            compareFunc=lambda new, old: (old.round(5).fillna(0) == new.round(5).fillna(0)).all(axis=None)
+        )
 
         i += 1
 
