@@ -44,6 +44,21 @@ if (!dir.exists(save_path)) {
 }
 
 source('util.R')
+source(file.path(repo_dir, 'save_util.R'))
+
+# Stop now, instead of after downloading everything, if any of the output files already exist
+if (params$save_data) {
+  output_files <- c(paste0(params$gene_filename, c("_tpm.rds", "_raw_counts.tsv")),
+                    paste0(params$methyl_filename, ".tsv"),
+                    paste0(params$clinical_filename, c(".tsv", "_supplement.xlsx")))
+  if (params$save_data_as_rds) {
+    output_files <- c(output_files,
+                      paste0(params$gene_filename, "_raw_counts.rds"),
+                      paste0(params$methyl_filename, ".rds"),
+                      paste0(params$clinical_filename, ".rds"))
+  }
+  stopIfOutputsExist(file.path(save_path, output_files))
+}
 ```
 
 
