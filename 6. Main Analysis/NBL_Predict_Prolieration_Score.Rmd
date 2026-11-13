@@ -9,6 +9,7 @@ params:
   n_outer_folds: 5    # outer folds, for estimating test performance
   n_inner_folds: 10   # inner folds, for choosing lambda
   lambda_rule: "lambda.min"
+  compare_existing: FALSE # if TRUE, run even if the output file exists, and compare the results with it at the end
 ---
 
 # Setup and data import
@@ -30,10 +31,21 @@ getSampleID <- function(s) {
   paste(strsplit(s, "-", fixed = TRUE)[[1]][1:4], collapse = "-")
 }
 
+source(file.path(repo_dir, 'save_util.R'))
+
 consts <- read_json(file.path(repo_dir, 'config.json'))
 proj_dir <- file.path(consts[['official_indir']], 'TARGET')
 
-proliferation.scores <- as.data.frame(readRDS(file.path(proj_dir, 'TARGET_ssGSEA_scores.rds')))
+# Combined measured and predicted proliferation scores, saved at the end
+output_filepath <- file.path(proj_dir, 'TARGET_ssGSEA_scores_all.tsv')
+
+# Stop now, instead of after the cross-validation, if the output file already exists
+if (!params$compare_existing) {
+  stopIfOutputsExist(output_filepath,
+                     advice = "or knit with parameters and set compare_existing to TRUE to rerun and compare the results with the existing file.")
+}
+
+proliferation.scores <-as.data.frame(readRDS(file.path(proj_dir, 'TARGET_ssGSEA_scores.rds')))
 row.names(proliferation.scores) <- sapply(row.names(proliferation.scores), getSampleID)
   
 clinical <- read.table(file.path(proj_dir, 'clinical.processed.tsv'), sep='\t', header=T)
@@ -242,7 +254,18 @@ kable(results, digits = 3) %>%
 
 # Combined known and predicted scores
 scores_all <- rbind(y_unlabeled_pred, data.frame(proliferation_score=y))
-write.table(scores_all, file.path(proj_dir, 'TARGET_ssGSEA_scores_all.tsv'),
-            quote=F, sep='\t')
+
+# Save, but don't overwrite an existing file that has different values
+writeWithoutOverwrite(
+  output_filepath,
+  scores_all,
+  writeFunc = function(filepath, data) write.table(data, filepath, quote = F, sep = '\t'),
+  readFunc = function(filepath) read.table(filepath, sep = '\t', header = TRUE),
+  # Same tumors in the same order, and the same scores
+  compareFunc = function(data, existing_data) {
+    identical(rownames(data), rownames(existing_data)) &&
+      isTRUE(all.equal(data$proliferation_score, existing_data$proliferation_score, tolerance = 1e-6))
+  }
+)
 ```
 
