@@ -23,8 +23,19 @@ library(bayesplot)
 library(reshape2)
 library(jsonlite)
 
+source(file.path(repo_dir, 'save_util.R'))
+
 consts <- read_json(file.path(repo_dir, 'config.json'))
 proj_dir <- file.path(consts[['official_indir']], 'TARGET')
+
+# Results file, saved in the working directory at the end
+output_filename <- paste(params$dataset, params$output_file_suffix, sep='.')
+if (!is.null(params$prefix)) {
+  output_filename <- paste(params$prefix, output_filename, sep='.')
+}
+
+# Stop now, instead of after fitting all the tumors, if the results file already exists
+stopIfOutputsExist(output_filename)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -241,9 +252,5 @@ for (j in 1:ncol(tumor_data)) {
   cat(sprintf("Completed %d of %d\n", j, ncol(tumor_data)), file = progress_filename, append = TRUE)
 }
 
-output_filename <- paste(params$dataset, params$output_file_suffix, sep='.')
-if (!is.null(params$prefix)) {
-  output_filename <- paste(params$prefix, output_filename, sep='.')
-}
 write.csv(all.results, output_filename, row.names = T)
 ```
