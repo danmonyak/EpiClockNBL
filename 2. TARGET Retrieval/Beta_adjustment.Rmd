@@ -9,7 +9,7 @@ params:
   save_path: "TARGET"
   methyl_filename: "cohort1.methyl"
   processed_clinical_filename: "clinical.processed.tsv"
-  lookup_filename: "GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx"
+  lookup_filename: "GSE35069_cell_type_mean_beta.tsv"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
   output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
   compare_existing: FALSE # if TRUE, run even if the output file exists, and compare the results with it at the end
@@ -61,8 +61,8 @@ cat("Dimensions of raw methylation data", dim(methyl_data), "\n")
 
 ### Restrict to Analysis Tumors
 
-We keep only the tumors in the analysis cohort that have bulk RNA data, which
-are the tumors included in the CIBERSORT analysis.
+We keep only the tumors in the analysis cohort that have bulk RNA data,
+which are the tumors included in the CIBERSORT analysis.
 
 ```{r restrict_to_analysis_tumors}
 clinical <- read.table(file.path(save_path,
@@ -85,9 +85,10 @@ cat("Dimensions of current methylation data", dim(methyl_data), "\n")
 
 ### Read CIBERSORTx Results
 
-The CIBERSORT analysis was completed for the tumors in the analysis cohort with
-bulk RNA data using the LM22 signature, B-mode batch correction, absolute
-mode, quantile normalization disabled, and 500 permutations.
+The CIBERSORT analysis was completed for the tumors in the analysis
+cohort with bulk RNA data using the LM22 signature, B-mode batch
+correction, absolute mode, quantile normalization disabled, and 500
+permutations.
 
 ```{r cibersort_read}
 idx <- match(getTumorIDs(colnames(methyl_data)), getTumorIDs(cibersort$Mixture))
@@ -100,10 +101,10 @@ cat("Dimensions of CIBERSORT results", dim(cibersort), "\n")
 
 ### Purity Values
 
-Purity estimates are the LUMP values in the processed clinical table. The
-LUMP method is taken from Aran, D., Sirota, M. and Butte, A. J. (2015)
-Systematic pan-cancer analysis of tumor purity. Nature Communications,
-6, 8971.
+Purity estimates are the LUMP values in the processed clinical table.
+The LUMP method is taken from Aran, D., Sirota, M. and Butte, A. J.
+(2015) Systematic pan-cancer analysis of tumor purity. Nature
+Communications, 6, 8971.
 
 ```{r read_purity}
 # keep only the data for tumors used in the analysis
@@ -120,8 +121,8 @@ cat("All current tumors are in the purity dataset:",
 
 #### Definition
 
-For each tumor, the purity-adjusted beta value of the tumor cells at
-CpG site $k$, $\beta_{k}^{t}$, is defined as
+For each tumor, the purity-adjusted beta value of the tumor cells at CpG
+site $k$, $\beta_{k}^{t}$, is defined as
 
 $$
 \beta_{k}^{t} = \frac{1}{p}\left[\beta_{k}^{m} - (1 - p) ~ \beta^{imp}_{k}\right],
@@ -144,9 +145,14 @@ the mapping below). Adjusted values outside $[0, 1]$ are truncated.
 
 #### Beta Value Lookup
 
-```{r read_wbc_xlsx}
+The WBC lookup table holds the average beta value of each purified blood
+cell type at each CpG site in GEO series GSE35069 (Reinius et al., 2012),
+across its 6 donors. It is made by *WBC_Lookup_Table.ipynb*.
+
+```{r read_wbc_lookup}
 # the lookup table is in the "Other" directory of official_indir
-lookup <- readxl::read_excel(file.path(official_indir, "Other", params$lookup_filename))
+lookup <- read.table(file.path(official_indir, "Other", params$lookup_filename),
+                     sep = "\t", header = TRUE, check.names = FALSE)
 
 # keep only the CpG sites of interest
 idx <- match(rownames(methyl_data), lookup$ID_REF)
@@ -204,7 +210,9 @@ for (i in 1L:length(grouping_to_wbc)) {
 }
 cat("This realignment worked:", all(tst), "\n")
 ```
+
 #### Plot distributions of absolute proportions of immune cell types
+
 ```{r plot_cibersort_proportions, fig.width = 7, fig.height = 6}
 components <- as.character(unlist(grouping_to_wbc))
 
