@@ -168,7 +168,7 @@ On Windows, use double backslashes in the paths:
 
 ### 6. Data directories
 
-Inside the *official_indir* directory, create three directories called `TARGET`, `Henrich` and `Other`. `TARGET` holds the discovery cohort data, `Henrich` holds the validation cohort data, and `Other` holds reference data (the blood cell-type methylation lookup table used in step 2d).
+Inside the *official_indir* directory, create three directories called `TARGET`, `Henrich` and `Other`. `TARGET` holds the discovery cohort data, `Henrich` holds the validation cohort data, and `Other` holds reference data (the blood cell-type methylation data used in step 2d).
 
 ## Pipeline
 
@@ -258,7 +258,7 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
 
 #### 2d. Purity adjustment
 
-1. Place the blood cell-type methylation lookup table, *GSE35069_series_matrix450bloodsubsets_lookuplist_short_header.xlsx*, in the *official_indir*/Other directory.
+1. Open the notebook *WBC_Lookup_Table.ipynb* inside `2. TARGET Retrieval` and run all cells. This downloads the series matrix of GEO series [GSE35069](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35069) (Reinius et al., 2012), in which whole blood, PBMC, granulocytes and seven purified blood cell types from 6 donors were measured on the 450K array. It saves the average beta value of each cell type at each CpG site as *GSE35069_cell_type_mean_beta.tsv* in *official_indir*/Other.
 2. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. On Windows, the virtual `P:` drive from step 2a must still be linked.
 3. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
    ```
