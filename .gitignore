@@ -57,3 +57,6 @@ scratch
 .RDataTmp
 sim_data
 CLAUDE.md
+
+# Figure folders left behind by interrupted GMM_STAN knits
+*GMM_STAN*_files/
