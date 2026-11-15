@@ -28,6 +28,7 @@ Data preprocessing is done by Python modules and R Markdown files; figures and r
 | `EpiClockNBL/` | Python package with the pipeline code that the notebooks call |
 | `1. Simulation/` … `7. GSEA/` | Pipeline stages, run in order (see [Pipeline](#pipeline)) |
 | `data/` | Small reference files (LUMP CpGs, Hallmark pathway names, protein-coding genes) |
+| `Supplementary Data/` | Supplementary tables made by the pipeline |
 | `save_util.R` | R helper functions for saving output files without overwriting existing data |
 | `config.json.example` | Template for the machine-specific `config.json` |
 | `environment.yml` | Conda environment with the pinned Python dependencies |
@@ -264,7 +265,7 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
    Rscript Cord_Blood_Lookup_Table.R
    ```
    This makes the same kind of table from sorted cord blood cell types, using the Bioconductor package FlowSorted.CordBloodCombined.450k (Gervin et al., 2019), and saves it as *CordBloodCombined_cell_type_mean_beta.tsv* in *official_indir*/Other. CpG sites that are not in the cord blood data take the values of the GSE35069 table.
-3. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. On Windows, the virtual `P:` drive from step 2a must still be linked.
+3. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. It also saves a table of the blood cell type that each LM22 cell type is mapped to, in the GSE35069 and cord blood tables, as `Supplementary Data/LM22_cell_type_mapping.xlsx`. On Windows, the virtual `P:` drive from step 2a must still be linked.
 4. Knit *Beta_adjustment.Rmd* again using *Knit with Parameters*, and set *immune_reference* to `PBMC`. This repeats the adjustment with a single immune cell profile, the average beta values of peripheral blood mononuclear cells (PBMC), instead of the cell types weighted by CIBERSORTx. The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted_PBMC.tsv* in *official_indir*/TARGET.
 5. Knit *Beta_adjustment.Rmd* once more, setting *immune_reference* to `CordBlood`. This repeats the adjustment with the cord blood cell types from step 2 instead of the adult ones, with the same CIBERSORTx weights. The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted_CordBlood.tsv* in *official_indir*/TARGET.
 6. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
