@@ -10,9 +10,10 @@ params:
   methyl_filename: "cohort1.methyl"
   processed_clinical_filename: "clinical.processed.tsv"
   lookup_filename: "GSE35069_cell_type_mean_beta.tsv"
+  cord_lookup_filename: "CordBloodCombined_cell_type_mean_beta.tsv"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
   output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
-  immune_reference: "CIBERSORTx" # "CIBERSORTx" (cell types weighted by CIBERSORTx), or "PBMC" (one mononuclear cell profile, saved with "_PBMC" added to the output filename)
+  immune_reference: "CIBERSORTx" # "CIBERSORTx" (adult cell types weighted by CIBERSORTx), "PBMC" (one mononuclear cell profile), or "CordBlood" (cord blood cell types weighted by CIBERSORTx); the last two are saved with "_PBMC" or "_CordBlood" added to the output filename
   compare_existing: FALSE # if TRUE, run even if the output file exists, and compare the results with it at the end
 editor_options:
   markdown:
@@ -38,11 +39,11 @@ if (consts[["Windows"]]) {
 }
 save_path <- file.path(official_indir, params$save_path)
 
-# Output file; the PBMC reference has its own file
-stopifnot(params$immune_reference %in% c("CIBERSORTx", "PBMC"))
+# Output file; the PBMC and cord blood references have their own files
+stopifnot(params$immune_reference %in% c("CIBERSORTx", "PBMC", "CordBlood"))
 output_filename <- params$output_filename
-if (params$immune_reference == "PBMC") {
-  output_filename <- sub("\\.tsv$", "_PBMC.tsv", output_filename)
+if (params$immune_reference != "CIBERSORTx") {
+  output_filename <- sub("\\.tsv$", paste0("_", params$immune_reference, ".tsv"), output_filename)
 }
 
 # Stop now, instead of after the adjustment, if the output file already exists
@@ -156,6 +157,13 @@ average methylation at site $k$ of peripheral blood mononuclear cells
 (PBMC) in the WBC lookup table, the same for every tumor, without the
 CIBERSORTx cell-type weights.
 
+With `immune_reference` set to "CordBlood", $\beta_{l,k}$ is instead taken
+from a lookup table of sorted cord blood cell types
+(FlowSorted.CordBloodCombined.450k; Gervin et al., 2019), made by
+*Cord_Blood_Lookup_Table.R*, with the same CIBERSORTx weights. Cord blood
+has no separate neutrophils or eosinophils, so the LM22 cell types mapped
+to them are mapped to cord blood granulocytes.
+
 #### Beta Value Lookup
 
 The WBC lookup table holds the average beta value of each purified blood
@@ -164,8 +172,10 @@ across its 6 donors. It is made by *WBC_Lookup_Table.ipynb*.
 
 ```{r read_wbc_lookup}
 # the lookup table is in the "Other" directory of official_indir
-lookup <- read.table(file.path(official_indir, "Other", params$lookup_filename),
+lookup_filename <- if (params$immune_reference == "CordBlood") params$cord_lookup_filename else params$lookup_filename
+lookup <- read.table(file.path(official_indir, "Other", lookup_filename),
                      sep = "\t", header = TRUE, check.names = FALSE)
+cat("Lookup table:", lookup_filename, "\n")
 
 # keep only the CpG sites of interest
 idx <- match(rownames(methyl_data), lookup$ID_REF)
@@ -200,6 +210,12 @@ grouping_to_wbc <- list("CD4+ T cells" = T.CD4.cells,
                         "CD56+ NK cells" = NK,
                         "Eosinophils" = Mast,
                         "Neutrophils" = Myeloid)
+
+# cord blood has granulocytes, but no separate eosinophils or neutrophils
+if (params$immune_reference == "CordBlood") {
+  grouping_to_wbc <- c(grouping_to_wbc[setdiff(names(grouping_to_wbc), c("Eosinophils", "Neutrophils"))],
+                       list("Granulocytes" = c(Mast, Myeloid)))
+}
 cat("All cell types are present in lookup",
     all(names(grouping_to_wbc) %in% colnames(lookup)), "\n")
 cat("All cell types are present in cibersort",
