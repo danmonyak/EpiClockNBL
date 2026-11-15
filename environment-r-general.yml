@@ -90,6 +90,7 @@ dependencies:
   - r-utf8=1.2.6
   - r-vctrs=0.7.3
   - r-vroom=1.7.1
+  - r-writexl=2.0.1
   - r-xfun=0.57
   - r-xml2=1.5.2
   - r-xml=3.99_0.25
