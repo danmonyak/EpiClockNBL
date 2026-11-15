@@ -203,19 +203,19 @@ T.CD4.cells <- c("T.cells.follicular.helper", "T.cells.CD4.naive",
                  "T.cells.CD4.memory.resting")
 
 # align these with the headers from the WBC datafile
-grouping_to_wbc <- list("CD4+ T cells" = T.CD4.cells,
-                        "CD8+ T cells" = T.CD8.cells,
-                        "CD14+ Monocytes" = Macro,
-                        "CD19+ B cells" = B.cells,
-                        "CD56+ NK cells" = NK,
-                        "Eosinophils" = Mast,
-                        "Neutrophils" = Myeloid)
+grouping_adult <- list("CD4+ T cells" = T.CD4.cells,
+                       "CD8+ T cells" = T.CD8.cells,
+                       "CD14+ Monocytes" = Macro,
+                       "CD19+ B cells" = B.cells,
+                       "CD56+ NK cells" = NK,
+                       "Eosinophils" = Mast,
+                       "Neutrophils" = Myeloid)
 
 # cord blood has granulocytes, but no separate eosinophils or neutrophils
-if (params$immune_reference == "CordBlood") {
-  grouping_to_wbc <- c(grouping_to_wbc[setdiff(names(grouping_to_wbc), c("Eosinophils", "Neutrophils"))],
-                       list("Granulocytes" = c(Mast, Myeloid)))
-}
+grouping_cord <- c(grouping_adult[setdiff(names(grouping_adult), c("Eosinophils", "Neutrophils"))],
+                   list("Granulocytes" = c(Mast, Myeloid)))
+
+grouping_to_wbc <- if (params$immune_reference == "CordBlood") grouping_cord else grouping_adult
 cat("All cell types are present in lookup",
     all(names(grouping_to_wbc) %in% colnames(lookup)), "\n")
 cat("All cell types are present in cibersort",
@@ -238,6 +238,45 @@ for (i in 1L:length(grouping_to_wbc)) {
   }
 }
 cat("This realignment worked:", all(tst), "\n")
+```
+
+#### Cell Type Mapping Table
+
+The mapping of the LM22 cell types to the cell types of the adult (GSE35069)
+and cord blood lookup tables is saved as an Excel table in the "Other"
+directory of official_indir. It is the same for every `immune_reference`
+(the PBMC reference doesn't use it).
+
+```{r save_cell_type_mapping}
+# LM22 cell types in the order of the CIBERSORTx results
+lm22_types <- intersect(colnames(cibersort), unlist(grouping_adult))
+stopifnot(setequal(lm22_types, unlist(grouping_adult)),
+          setequal(lm22_types, unlist(grouping_cord)))
+
+# lookup table cell type that each LM22 cell type is mapped to
+mapTo <- function(grouping) {
+  sapply(lm22_types, function(x) names(grouping)[sapply(grouping, function(g) x %in% g)])
+}
+
+# LM22 names as CIBERSORTx writes them (R turned spaces and parentheses into dots)
+lm22_names <- gsub("\\.", " ", sub("\\.\\.Tregs\\.$", " (Tregs)", lm22_types))
+
+cell_type_mapping <- data.frame("LM22 cell type" = lm22_names,
+                                "Adult reference (GSE35069)" = mapTo(grouping_adult),
+                                "Cord blood reference (FlowSorted.CordBloodCombined.450k)" = mapTo(grouping_cord),
+                                check.names = FALSE, row.names = NULL)
+knitr::kable(cell_type_mapping)
+
+writeWithoutOverwrite(
+  file.path(official_indir, "Other", "LM22_cell_type_mapping.xlsx"),
+  cell_type_mapping,
+  writeFunc = function(filepath, data) writexl::write_xlsx(data, filepath),
+  readFunc = function(filepath) as.data.frame(readxl::read_excel(filepath)),
+  compareFunc = function(data, existing_data) {
+    identical(colnames(data), colnames(existing_data)) &&
+      isTRUE(all.equal(data, existing_data, check.attributes = FALSE))
+  }
+)
 ```
 
 #### Plot distributions of absolute proportions of immune cell types
