@@ -323,7 +323,7 @@ def getCorrelation(sample_annotations, var_x, var_y='methStdev', only_pure=False
 
 
 def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True, use_samples=None,
-                        outdir='.', outfile=True, ax=None, text_x=0, text_y=0,
+                        outdir='.', outfile=True, ax=None, text_x=0, text_y=0, rvalue_format='.2f',
                         scatter_kws={}, line_kws={}, custom_title=None, xlabel=None, ylabel=None, bbox_dict=None, color='blue',
                        figsize=(10, 10), labelfontsize=20, ticksfontsize=10, s=1, sf=1, file_format='pdf', title=False):
     """
@@ -352,6 +352,8 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
         x coordinate of "R = ..." text
     text_y : float
         y coordinate of "R = ..." text
+    rvalue_format: str
+        format string used for displaying the correlation R value on the plot
     scatter_kws : dict
         scatter plot keyword arguments -- see sns.regplot documentation
     line_kws : dict
@@ -415,6 +417,8 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     
     # Calculate Pearson correlation between variables
     res = getCorrelation(plot_data, var_x=var_x, var_y=var_y)
+    def formatRvalue(x):
+        return format(x, rvalue_format)
     
     ########################
     ##### Create plot
@@ -442,7 +446,7 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     ax.tick_params(axis='both', labelsize=ticksfontsize * sf, width=sf, length=8 * sf)
     
     # Put (R = ...) on the plot
-    ax.text(text_x, text_y, f'R = {res.rvalue:.2f}',
+    ax.text(text_x, text_y, f'R = {formatRvalue(res.rvalue)}',
                         ha="center", va="bottom",
                         fontfamily='sans-serif', fontsize=0.8 * labelfontsize * sf, bbox=bbox_dict)
     
