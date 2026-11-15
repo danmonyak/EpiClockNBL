@@ -45,6 +45,7 @@ pipeline_template.py
 3. Select fCpGs/outputs/old/
 figures_revision
 *.xlsx
+!Supplementary Data/*.xlsx
 *.rtf
 Gaussian Mixture Model/GMM_STAN*_files
 Gaussian Mixture Model/*progress.txt
