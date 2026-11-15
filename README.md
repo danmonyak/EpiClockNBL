@@ -277,7 +277,7 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
 
 Open the notebook *Pipeline.ipynb* inside `3. Select fCpGs` and run all cells. This requires the purity-adjusted beta values from step 2d.
 
-This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_Clock_CpGs.txt`. It also saves the beta values at the fCpG sites: the unadjusted beta values (*cohort1.methyl.clock_sites.tsv*), and the purity-adjusted beta values from step 2d (*cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv* and *cohort1.analysis_tumors.methyl_adjusted_PBMC.clock_sites.tsv*), all in *official_indir*/TARGET. The fCpG sites are selected from the unadjusted beta values only. It then runs the sensitivity analysis, in which the tumors are randomly split into two halves and fCpGs are selected separately in each half (`outputs/split1` and `outputs/split2`).
+This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_Clock_CpGs.txt`. It also saves the beta values at the fCpG sites: the unadjusted beta values (*cohort1.methyl.clock_sites.tsv*), and the purity-adjusted beta values from step 2d (*cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv*, *cohort1.analysis_tumors.methyl_adjusted_PBMC.clock_sites.tsv* and *cohort1.analysis_tumors.methyl_adjusted_CordBlood.clock_sites.tsv*), all in *official_indir*/TARGET. The fCpG sites are selected from the unadjusted beta values only. It then runs the sensitivity analysis, in which the tumors are randomly split into two halves and fCpGs are selected separately in each half (`outputs/split1` and `outputs/split2`).
 
 ### 4. Process Supplementary Data
 
