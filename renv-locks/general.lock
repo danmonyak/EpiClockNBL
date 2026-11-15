@@ -803,6 +803,111 @@
       "Author": "Bioconductor Package Maintainer [cre], Martin Morgan [aut], Marc Carlson [ctb], Dan Tenenbaum [ctb], Sonali Arora [ctb], Valerie Oberchain [ctb], Kayla Morrell [ctb], Lori Shepherd [aut]",
       "Maintainer": "Bioconductor Package Maintainer <maintainer@bioconductor.org>"
     },
+    "FlowSorted.Blood.EPIC": {
+      "Package": "FlowSorted.Blood.EPIC",
+      "Version": "2.14.0",
+      "Source": "Bioconductor",
+      "Type": "Package",
+      "Title": "Illumina EPIC data on immunomagnetic sorted peripheral adult blood cells",
+      "Date": "2021-10-26",
+      "Authors@R": "c( person(c(\"Lucas\", \"A.\"), \"Salas\", role = c(\"cre\", \"aut\"), email = \"lucas.a.salas.diaz@dartmouth.edu\"), person(c(\"Devin\", \"C.\"), \"Koestler\", role = c(\"aut\"), email = \"dkoestler@kumc.edu\"), person(c(\"Rondi\", \"A.\"), \"Butler\", role = c(\"ctb\")), person(c(\"Helen\", \"M.\"), \"Hansen\", role = c(\"ctb\")), person(c(\"John\", \"K.\"), \"Wiencke\", role = c(\"ctb\")), person(c(\"Karl\", \"T.\"), \"Kelsey\", role = c(\"ctb\")), person(c(\"Brock\", \"C.\"), \"Christensen\", role = c(\"ctb\")), person(c(\"Kasper\", \"Daniel\"), \"Hansen\", role = c(\"ctb\"), comment = \"author and maintainer of the original minfi estimateCellCounts and internal functions\"), person(\"Jean-Philippe\", \"Fortin\", role = \"ctb\",  comment = \"contributor in the original minfi estimateCellCounts and internal functions\"), person(c(\"Shan\", \"V.\"), \"Andrews\", role = \"ctb\", comment = \"contributor in the original minfi estimateCellCounts and internal functions\"), person(c(\"E.\", \"Andres\"), \"Houseman\", role = c(\"ctb\"), comment = \"author of the original quadratic programming function used for cell projection\"), person(c(\"Andrew\", \"E\"), \"Jaffe\", role = c(\"ctb\"), comment = \"author of the original estimateCellCounts and internal functions within minfi\"))",
+      "Description": "Raw data objects to be used for blood cell proportion estimation in minfi and similar packages.  The FlowSorted.Blood.EPIC object is based in samples assayed by Brock Christensen and colleagues; for details see Salas et al. 2018. https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE110554.",
+      "License": "GPL-3",
+      "Depends": [
+        "R (>= 3.5)",
+        "minfi(>= 1.21.2)",
+        "ExperimentHub"
+      ],
+      "Imports": [
+        "genefilter",
+        "nlme",
+        "quadprog",
+        "graphics",
+        "stats",
+        "utils",
+        "AnnotationHub",
+        "SummarizedExperiment",
+        "S4Vectors"
+      ],
+      "Enhances": [
+        "FlowSorted.CordBloodCombined.450k(>= 1.11.5)"
+      ],
+      "biocViews": "ExperimentData, Homo_sapiens_Data, Tissue, MicroarrayData, Genome, TissueMicroarrayData, MethylationArrayData",
+      "NeedsCompilation": "no",
+      "LazyData": "yes",
+      "LazyDataCompression": "gzip",
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "FlowSorted.CordBlood.450k",
+        "FlowSorted.Blood.450k(>= 1.0.1)",
+        "EpiDISH",
+        "FlowSorted.CordBloodNorway.450k",
+        "testthat",
+        "IlluminaHumanMethylation450kmanifest(>= 0.2.0)",
+        "IlluminaHumanMethylationEPICmanifest",
+        "IlluminaHumanMethylation450kanno.ilmn12.hg19(>= 0.2.1)",
+        "IlluminaHumanMethylationEPICanno.ilm10b4.hg19"
+      ],
+      "VignetteBuilder": "knitr",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.2.3",
+      "URL": "https://github.com/immunomethylomics/FlowSorted.Blood.EPIC",
+      "BugReports": "https://github.com/immunomethylomics/FlowSorted.Blood.EPIC/issues.",
+      "git_url": "https://git.bioconductor.org/packages/FlowSorted.Blood.EPIC",
+      "git_branch": "RELEASE_3_22",
+      "git_last_commit": "317d4a4",
+      "git_last_commit_date": "2025-10-29",
+      "Repository": "Bioconductor 3.22",
+      "Author": "Lucas A. Salas [cre, aut], Devin C. Koestler [aut], Rondi A. Butler [ctb], Helen M. Hansen [ctb], John K. Wiencke [ctb], Karl T. Kelsey [ctb], Brock C. Christensen [ctb], Kasper Daniel Hansen [ctb] (author and maintainer of the original minfi estimateCellCounts and internal functions), Jean-Philippe Fortin [ctb] (contributor in the original minfi estimateCellCounts and internal functions), Shan V. Andrews [ctb] (contributor in the original minfi estimateCellCounts and internal functions), E. Andres Houseman [ctb] (author of the original quadratic programming function used for cell projection), Andrew E Jaffe [ctb] (author of the original estimateCellCounts and internal functions within minfi)",
+      "Maintainer": "Lucas A. Salas <lucas.a.salas.diaz@dartmouth.edu>"
+    },
+    "FlowSorted.CordBloodCombined.450k": {
+      "Package": "FlowSorted.CordBloodCombined.450k",
+      "Version": "1.26.0",
+      "Source": "Bioconductor",
+      "Type": "Package",
+      "Title": "Illumina 450k/EPIC data on FACS and MACS umbilical blood cells",
+      "Date": "2019-10-24",
+      "Authors@R": "c( person(c(\"Lucas\", \"A.\"), \"Salas\", role = c(\"cre\", \"aut\"), email = \"lucas.a.salas.diaz@dartmouth.edu\"), person(\"Kristina\", \"Gervin\", role = c(\"aut\")), person(c(\"Meaghan\", \"C.\"), \"Jones\", role = c(\"aut\")), person(c(\"Kelly\", \"M.\"), \"Bakulski\", role = c(\"ctb\")), person(c(\"Devin\", \"C.\"), \"Koestler\", role = c(\"ctb\")), person(c(\"John\", \"K.\"), \"Wiencke\", role = c(\"ctb\")), person(c(\"Karl\", \"T.\"), \"Kelsey\", role = c(\"ctb\")), person(\"Robert\", \"Lyle\", role = c(\"ctb\")), person(c(\"Brock\", \"C.\"), \"Christensen\", role = c(\"ctb\")), person(\"Janine\", \"Felix\", role = c(\"ctb\")))",
+      "Description": "Raw data objects to be used for umbilical cord blood cell  proportion estimation in minfi and similar packages.  The FlowSorted.CordBloodCombined.450k object is based in samples assayed by Bakulski et al, Gervin et al., de Goede et al., and Lin et al.",
+      "License": "GPL-3",
+      "Depends": [
+        "R (>= 3.6)",
+        "minfi (>= 1.21.2)",
+        "ExperimentHub(>= 1.9.1)"
+      ],
+      "Imports": [
+        "SummarizedExperiment",
+        "IlluminaHumanMethylation450kanno.ilmn12.hg19(>= 0.2.1)",
+        "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+        "utils",
+        "AnnotationHub"
+      ],
+      "biocViews": "ExperimentData, Homo_sapiens_Data, Tissue, MicroarrayData, Genome, TissueMicroarrayData, MethylationArrayData, ExperimentHub",
+      "NeedsCompilation": "no",
+      "LazyData": "yes",
+      "LazyDataCompression": "gzip",
+      "Suggests": [
+        "FlowSorted.Blood.EPIC",
+        "knitr",
+        "rmarkdown",
+        "testthat",
+        "IlluminaHumanMethylation450kmanifest(>= 0.2.0)",
+        "IlluminaHumanMethylationEPICanno.ilm10b2.hg19"
+      ],
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.1.2",
+      "URL": "https://github.com/immunomethylomics/FlowSorted.CordBloodCombined.450k",
+      "BugReports": "https://github.com/immunomethylomics/FlowSorted.CordBloodCombined.450k/issues.",
+      "git_url": "https://git.bioconductor.org/packages/FlowSorted.CordBloodCombined.450k",
+      "git_branch": "RELEASE_3_22",
+      "git_last_commit": "0b402b3",
+      "git_last_commit_date": "2025-10-29",
+      "Repository": "Bioconductor 3.22",
+      "Author": "Lucas A. Salas [cre, aut], Kristina Gervin [aut], Meaghan C. Jones [aut], Kelly M. Bakulski [ctb], Devin C. Koestler [ctb], John K. Wiencke [ctb], Karl T. Kelsey [ctb], Robert Lyle [ctb], Brock C. Christensen [ctb], Janine Felix [ctb]",
+      "Maintainer": "Lucas A. Salas <lucas.a.salas.diaz@dartmouth.edu>"
+    },
     "GEOquery": {
       "Package": "GEOquery",
       "Version": "2.78.0",
@@ -1285,6 +1390,39 @@
       "NeedsCompilation": "yes",
       "Author": "Hervé Pagès [aut, cre], Patrick Aboyoun [aut], Michael Lawrence [aut]",
       "Maintainer": "Hervé Pagès <hpages.on.github@gmail.com>"
+    },
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19": {
+      "Package": "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+      "Version": "0.6.1",
+      "Source": "Bioconductor",
+      "Title": "Annotation for Illumina's 450k methylation arrays",
+      "Description": "Manifests and annotation for Illumina's 450k array data.",
+      "Author": "Kasper Daniel Hansen",
+      "Maintainer": "Kasper Daniel Hansen <kasperdanielhansen@gmail.com>",
+      "License": "Artistic-2.0",
+      "Depends": [
+        "R (>= 3.5.0)",
+        "minfi (>= 1.19.15)"
+      ],
+      "LazyData": "yes",
+      "biocViews": "AnnotationData, IlluminaChip, Homo_sapiens",
+      "NeedsCompilation": "no"
+    },
+    "IlluminaHumanMethylation450kmanifest": {
+      "Package": "IlluminaHumanMethylation450kmanifest",
+      "Version": "0.4.0",
+      "Source": "Bioconductor",
+      "Title": "Annotation for Illumina's 450k methylation arrays",
+      "Description": "Manifest for Illumina's 450k array data",
+      "Author": "Kasper Daniel Hansen, Martin Aryee",
+      "Maintainer": "Kasper Daniel Hansen <khansen@jhsph.edu>",
+      "License": "Artistic-2.0",
+      "Depends": [
+        "R (>= 2.13.0)",
+        "minfi"
+      ],
+      "LazyData": "yes",
+      "biocViews": "IlluminaChip, Homo_sapiens, DNAMethylation"
     },
     "IlluminaHumanMethylationEPICanno.ilm10b4.hg19": {
       "Package": "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
