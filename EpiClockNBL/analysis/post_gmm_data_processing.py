@@ -61,17 +61,19 @@ def pipeline(verbose=True):
     gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_sensitivity_split2.index = gmm_results_target_sensitivity_split2.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
 
-    # Purity-adjusted beta values
-    gmm_results_target_adjusted = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'ADJUSTED.TARGET.GMM_results.csv'), index_col=0)
-    gmm_results_target_adjusted.index = gmm_results_target_adjusted.index.map(lambda x:x.replace('.', '-'))
+    # Purity-adjusted beta values, with the CIBERSORTx-weighted and the PBMC immune cell references
+    gmm_results_target_adjusted = {}
+    for prefix in ['ADJUSTED', 'ADJUSTED_PBMC']:
+        gmm_results = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', f'{prefix}.TARGET.GMM_results.csv'), index_col=0)
+        gmm_results.index = gmm_results.index.map(lambda x:x.replace('.', '-'))
 
-    # Remove tumors whose GMM fit did not converge (any Rhat above the threshold)
-    adjusted_Rhat = gmm_results_target_adjusted.loc[:, gmm_results_target_adjusted.columns.str.endswith('.Rhat')]
-    adjusted_not_converged = (adjusted_Rhat > ADJUSTED_RHAT_THRESHOLD).any(axis=1)
-    if verbose:
-        print(f'\nRemoving {adjusted_not_converged.sum()} tumors from the adjusted GMM results with Rhat > {ADJUSTED_RHAT_THRESHOLD}:')
-        print(adjusted_Rhat.loc[adjusted_not_converged].max(axis=1).to_string())
-    gmm_results_target_adjusted = gmm_results_target_adjusted.loc[~adjusted_not_converged]
+        # Remove tumors whose GMM fit did not converge (any Rhat above the threshold)
+        adjusted_Rhat = gmm_results.loc[:, gmm_results.columns.str.endswith('.Rhat')]
+        adjusted_not_converged = (adjusted_Rhat > ADJUSTED_RHAT_THRESHOLD).any(axis=1)
+        if verbose:
+            print(f'\nRemoving {adjusted_not_converged.sum()} tumors from the {prefix} GMM results with Rhat > {ADJUSTED_RHAT_THRESHOLD}:')
+            print(adjusted_Rhat.loc[adjusted_not_converged].max(axis=1).to_string())
+        gmm_results_target_adjusted[prefix] = gmm_results.loc[~adjusted_not_converged]
 
     if verbose:
         print('DONE')
@@ -94,7 +96,8 @@ def pipeline(verbose=True):
 
     # Purity-adjusted beta values
     # Only available for tumors with gene expression data, so keep all tumors (left merge)
-    clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_adjusted['phi.mean'].rename('phi.adjusted'), left_on='sampleID', right_index=True, how='left', validate="one_to_one")
+    for prefix, phi_col in [('ADJUSTED', 'phi.adjusted'), ('ADJUSTED_PBMC', 'phi.adjusted.PBMC')]:
+        clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_adjusted[prefix]['phi.mean'].rename(phi_col), left_on='sampleID', right_index=True, how='left', validate="one_to_one")
 
     if verbose:
         print('DONE')
