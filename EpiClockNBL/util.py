@@ -414,7 +414,8 @@ def saveCorrelationPlot(sample_annotations, var_y, var_x='c_beta', restrict=True
     
     # Define final DataFrame for plotting
     plot_data = sample_annotations.loc[use_samples, [var_x, var_y]].dropna()
-    
+    print(f'{var_x} vs {var_y}: {plot_data.shape[0]} points plotted')
+
     # Calculate Pearson correlation between variables
     res = getCorrelation(plot_data, var_x=var_x, var_y=var_y)
     def formatRvalue(x):
