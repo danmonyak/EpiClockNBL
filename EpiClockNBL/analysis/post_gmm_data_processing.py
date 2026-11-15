@@ -17,6 +17,15 @@ proj_dir_Henrich = os.path.join(nbl_consts['official_indir'], 'Henrich')
 # Tumors in the adjusted GMM results with any Rhat above this are not given a phi.adjusted value
 ADJUSTED_RHAT_THRESHOLD = 1.2
 
+# GMM runs on purity-adjusted beta values (prefix of the results file), and the clinical table column for each:
+# immune cells from adult cell types weighted by CIBERSORTx, a single adult PBMC profile,
+# and cord blood cell types weighted by CIBERSORTx
+ADJUSTED_RUNS = {
+    'ADJUSTED': 'phi.adjusted',
+    'ADJUSTED_PBMC': 'phi.adjusted.PBMC',
+    'ADJUSTED_CORDBLOOD': 'phi.adjusted.CordBlood',
+}
+
 def pipeline(verbose=True):
     
     if verbose:
@@ -61,9 +70,9 @@ def pipeline(verbose=True):
     gmm_results_target_sensitivity_split2 = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', 'SENSITIVITY_SPLIT2.TARGET.GMM_results.csv'), index_col=0)
     gmm_results_target_sensitivity_split2.index = gmm_results_target_sensitivity_split2.index.map(lambda x:'-'.join(x.replace('.', '-').split('-')[:-1]))
 
-    # Purity-adjusted beta values, with the CIBERSORTx-weighted and the PBMC immune cell references
+    # Purity-adjusted beta values, with each immune cell reference
     gmm_results_target_adjusted = {}
-    for prefix in ['ADJUSTED', 'ADJUSTED_PBMC']:
+    for prefix in ADJUSTED_RUNS:
         gmm_results = pd.read_csv(os.path.join(nbl_consts['repo_dir'], '5. Gaussian Mixture Model', f'{prefix}.TARGET.GMM_results.csv'), index_col=0)
         gmm_results.index = gmm_results.index.map(lambda x:x.replace('.', '-'))
 
@@ -96,7 +105,7 @@ def pipeline(verbose=True):
 
     # Purity-adjusted beta values
     # Only available for tumors with gene expression data, so keep all tumors (left merge)
-    for prefix, phi_col in [('ADJUSTED', 'phi.adjusted'), ('ADJUSTED_PBMC', 'phi.adjusted.PBMC')]:
+    for prefix, phi_col in ADJUSTED_RUNS.items():
         clinical['TARGET'] = clinical['TARGET'].merge(gmm_results_target_adjusted[prefix]['phi.mean'].rename(phi_col), left_on='sampleID', right_index=True, how='left', validate="one_to_one")
 
     if verbose:
