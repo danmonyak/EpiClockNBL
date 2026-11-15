@@ -259,9 +259,15 @@ Open the notebook *Data_Processing_Pipeline.ipynb* and run all cells to generate
 #### 2d. Purity adjustment
 
 1. Open the notebook *WBC_Lookup_Table.ipynb* inside `2. TARGET Retrieval` and run all cells. This downloads the series matrix of GEO series [GSE35069](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35069) (Reinius et al., 2012), in which whole blood, PBMC, granulocytes and seven purified blood cell types from 6 donors were measured on the 450K array. It saves the average beta value of each cell type at each CpG site as *GSE35069_cell_type_mean_beta.tsv* in *official_indir*/Other.
-2. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. On Windows, the virtual `P:` drive from step 2a must still be linked.
-3. Knit *Beta_adjustment.Rmd* again using *Knit with Parameters*, and set *immune_reference* to `PBMC`. This repeats the adjustment with a single immune cell profile, the average beta values of peripheral blood mononuclear cells (PBMC), instead of the cell types weighted by CIBERSORTx. The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted_PBMC.tsv* in *official_indir*/TARGET.
-4. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
+2. From inside `2. TARGET Retrieval`, run:
+   ```
+   Rscript Cord_Blood_Lookup_Table.R
+   ```
+   This makes the same kind of table from sorted cord blood cell types, using the Bioconductor package FlowSorted.CordBloodCombined.450k (Gervin et al., 2019), and saves it as *CordBloodCombined_cell_type_mean_beta.tsv* in *official_indir*/Other. CpG sites that are not in the cord blood data take the values of the GSE35069 table.
+3. Open *Beta_adjustment.Rmd* inside `2. TARGET Retrieval` and *Knit* the file. For each tumor in the analysis cohort that has gene expression data, this adjusts the beta values of all CpG sites for tumor purity, using the LUMP purity estimates and the immune cell fractions from CIBERSORTx (step 2c). The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted.tsv* in *official_indir*/TARGET. On Windows, the virtual `P:` drive from step 2a must still be linked.
+4. Knit *Beta_adjustment.Rmd* again using *Knit with Parameters*, and set *immune_reference* to `PBMC`. This repeats the adjustment with a single immune cell profile, the average beta values of peripheral blood mononuclear cells (PBMC), instead of the cell types weighted by CIBERSORTx. The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted_PBMC.tsv* in *official_indir*/TARGET.
+5. Knit *Beta_adjustment.Rmd* once more, setting *immune_reference* to `CordBlood`. This repeats the adjustment with the cord blood cell types from step 2 instead of the adult ones, with the same CIBERSORTx weights. The adjusted beta values are saved as *cohort1.analysis_tumors.methyl_adjusted_CordBlood.tsv* in *official_indir*/TARGET.
+6. **Windows only.** Unlink the virtual `P:` drive in PowerShell:
    ```
    subst P: /D
    ```
@@ -282,7 +288,7 @@ This selects the fCpG sites and saves the list to `3. Select fCpGs/outputs/NBL_C
 
 A Gaussian mixture model is fit to each tumor's beta values in order to sample from the posterior of the mitotic age $\phi$. This requires the R library rstan, so activate the stan R environment (`epiclocknbl-stan`) first.
 
-The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all six of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
+The run scripts are in `5. Gaussian Mixture Model/bin`. From inside `5. Gaussian Mixture Model`, run all seven of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GMM_STAN_TARGET.bat`.
 
 TARGET cohort:
 ```
@@ -301,13 +307,14 @@ bash bin/Run_GMM_STAN_TARGET_SPLIT1.sh
 bash bin/Run_GMM_STAN_TARGET_SPLIT2.sh
 ```
 
-TARGET cohort, purity-adjusted beta values (from steps 2d and 3), with the CIBERSORTx and the PBMC immune cell references:
+TARGET cohort, purity-adjusted beta values (from steps 2d and 3), with the CIBERSORTx, PBMC and cord blood immune cell references:
 ```
 bash bin/Run_GMM_STAN_TARGET_ADJUSTED.sh
 bash bin/Run_GMM_STAN_TARGET_ADJUSTED_PBMC.sh
+bash bin/Run_GMM_STAN_TARGET_ADJUSTED_CORDBLOOD.sh
 ```
 
-Each run takes a few hours. Progress is written to a file in `5. Gaussian Mixture Model`, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv*, *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*, *ADJUSTED.TARGET.GMM_results.csv* and *ADJUSTED_PBMC.TARGET.GMM_results.csv*.
+Each run takes a few hours. Progress is written to a file in `5. Gaussian Mixture Model`, for example *TARGET.GMM_progress.txt* or *Henrich.GMM_progress.txt*, and the results are saved there as *TARGET.GMM_results.csv*, *Henrich.GMM_results.csv*, *SENSITIVITY_SPLIT1.TARGET.GMM_results.csv*, *SENSITIVITY_SPLIT2.TARGET.GMM_results.csv*, *ADJUSTED.TARGET.GMM_results.csv*, *ADJUSTED_PBMC.TARGET.GMM_results.csv* and *ADJUSTED_CORDBLOOD.TARGET.GMM_results.csv*.
 
 ### 6. Main Analysis
 
@@ -315,7 +322,7 @@ All files for this stage are inside `6. Main Analysis`. Run the steps in order.
 
 #### a. Data processing
 
-After all six GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages (including the purity-adjusted mitotic ages, *phi.adjusted* and *phi.adjusted.PBMC*) to the clinical tables and saves the patient characteristics summary tables (*TARGET_patient_characteristics.xlsx* and *Henrich_patient_characteristics.xlsx* in `6. Main Analysis`).
+After all seven GMM runs have finished, open the notebook *Pipeline.ipynb* and run all cells. This adds the mitotic ages (including the purity-adjusted mitotic ages, *phi.adjusted*, *phi.adjusted.PBMC* and *phi.adjusted.CordBlood*) to the clinical tables and saves the patient characteristics summary tables (*TARGET_patient_characteristics.xlsx* and *Henrich_patient_characteristics.xlsx* in `6. Main Analysis`).
 
 #### b. Proliferation scores
 
@@ -328,7 +335,7 @@ Open the notebook *Estimate Ages.ipynb* and run all cells. This requires the pro
 
 #### d. Mitotic age and covariate analysis
 
-Open the notebook *Make Figures.ipynb* and run all cells. This requires the clinical table saved by *Estimate Ages.ipynb* in step c. Besides the main figures, it plots the mitotic age and the purity-adjusted mitotic age against tumor purity (LUMP), compares the purity-adjusted mitotic ages from the two immune cell references, and repeats the covariate analysis on the tumors with LUMP ≥ 0.8.
+Open the notebook *Make Figures.ipynb* and run all cells. This requires the clinical table saved by *Estimate Ages.ipynb* in step c. Besides the main figures, it plots the mitotic age and the purity-adjusted mitotic age against tumor purity (LUMP), compares the purity-adjusted mitotic ages from the different immune cell references, and repeats the covariate analysis on the tumors with LUMP ≥ 0.8.
 
 #### e. Survival analysis
 
