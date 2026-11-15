@@ -39,10 +39,9 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     # Output files
     Clock_CpGs_filepath = os.path.join(output_dir, 'NBL_Clock_CpGs.txt')
     clock_sites_outfile_path = os.path.join(outdir, 'cohort1.methyl.clock_sites.tsv')
-    adjusted_clock_sites_outfile_path = os.path.join(outdir, 'cohort1.analysis_tumors.methyl_adjusted.clock_sites.tsv')
 
     # Say now if the output files already exist, since they are compared with the new results at the end
-    nbl_util.noteExistingOutputs([Clock_CpGs_filepath, clock_sites_outfile_path, adjusted_clock_sites_outfile_path])
+    nbl_util.noteExistingOutputs([Clock_CpGs_filepath, clock_sites_outfile_path])
 
     ####################################################################################
     ####################################################################################
@@ -229,20 +228,6 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     nbl_util.writeWithoutOverwrite(
         clock_sites_outfile_path,
         beta_values_unbiased_sites.loc[Clock_CpGs],
-        lambda filepath, data: data.to_csv(filepath, sep='\t'),
-        lambda filepath: pd.read_table(filepath, index_col=0),
-        compareFunc=beta_values_match
-    )
-
-    # Save purity-adjusted beta values of Clock sites, don't overwrite existing file with different values
-    beta_values_adjusted = pd.read_table(
-        os.path.join(proj_dir, 'cohort1.analysis_tumors.methyl_adjusted.tsv'),
-        index_col=0
-    )
-    beta_values_adjusted = beta_values_adjusted.rename(columns=nbl_util.getSampleID)
-    nbl_util.writeWithoutOverwrite(
-        adjusted_clock_sites_outfile_path,
-        beta_values_adjusted.loc[Clock_CpGs],
         lambda filepath, data: data.to_csv(filepath, sep='\t'),
         lambda filepath: pd.read_table(filepath, index_col=0),
         compareFunc=beta_values_match
