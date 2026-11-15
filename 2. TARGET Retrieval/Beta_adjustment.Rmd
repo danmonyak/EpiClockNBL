@@ -12,6 +12,7 @@ params:
   lookup_filename: "GSE35069_cell_type_mean_beta.tsv"
   cibersort_filename: "Cibersort_LM22_500perm_Analysis_Tumors.csv"
   output_filename: "cohort1.analysis_tumors.methyl_adjusted.tsv"
+  immune_reference: "CIBERSORTx" # "CIBERSORTx" (cell types weighted by CIBERSORTx), or "PBMC" (one mononuclear cell profile, saved with "_PBMC" added to the output filename)
   compare_existing: FALSE # if TRUE, run even if the output file exists, and compare the results with it at the end
 editor_options:
   markdown:
@@ -37,9 +38,16 @@ if (consts[["Windows"]]) {
 }
 save_path <- file.path(official_indir, params$save_path)
 
+# Output file; the PBMC reference has its own file
+stopifnot(params$immune_reference %in% c("CIBERSORTx", "PBMC"))
+output_filename <- params$output_filename
+if (params$immune_reference == "PBMC") {
+  output_filename <- sub("\\.tsv$", "_PBMC.tsv", output_filename)
+}
+
 # Stop now, instead of after the adjustment, if the output file already exists
 if (!params$compare_existing) {
-  stopIfOutputsExist(file.path(save_path, params$output_filename),
+  stopIfOutputsExist(file.path(save_path, output_filename),
                      advice = "or knit with parameters and set compare_existing to TRUE to rerun and compare the results with the existing file.")
 }
 ```
@@ -142,6 +150,11 @@ both from the CIBERSORTx analysis, so the weights $s_{l}/S$ sum to 1.
 $\beta_{l,k}$ is the average methylation at site $k$ of the blood cell
 type in the WBC lookup table that LM22 cell type $l$ is mapped to (see
 the mapping below). Adjusted values outside $[0, 1]$ are truncated.
+
+With `immune_reference` set to "PBMC", $\beta_{k}^{imp}$ is instead the
+average methylation at site $k$ of peripheral blood mononuclear cells
+(PBMC) in the WBC lookup table, the same for every tumor, without the
+CIBERSORTx cell-type weights.
 
 #### Beta Value Lookup
 
@@ -253,6 +266,12 @@ for (i in 1L:ncol(methyl_data)) {
   cs_tumor <- cibersort[tumor_index, 2L:23L]
   lm22_wgts[, i] <- {lookup_lm22 %*% t(data.matrix(cs_tumor))} / cibersort$Absolute.score..sig.score.[tumor_index]
 }
+
+# PBMC reference: the same mononuclear cell profile for every tumor
+if (params$immune_reference == "PBMC") {
+  lm22_wgts <- matrix(lookup$PBMC, nrow = nrow(methyl_data), ncol = ncol(methyl_data))
+}
+cat("Immune cell reference:", params$immune_reference, "\n")
 ```
 
 ```{r generate_and_save}
@@ -265,7 +284,7 @@ beta_adj1_tumor <- pmin(pmax(beta_adj1_tumor, 0.0), 1.0)
 
 # Save, but don't overwrite an existing file that has different values
 writeWithoutOverwrite(
-  file.path(save_path, params$output_filename),
+  file.path(save_path, output_filename),
   beta_adj1_tumor,
   writeFunc = function(filepath, data) write.table(data, file = filepath, sep = "\t"),
   readFunc = function(filepath) data.matrix(read.table(filepath, sep = "\t", header = TRUE,
