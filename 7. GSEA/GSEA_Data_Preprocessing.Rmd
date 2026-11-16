@@ -11,9 +11,7 @@ params:
   count_data_file: "cohort1.rnaseq_raw_counts.rds" # file from GDCprepare
   # c_beta_file: "TARGET/NBL.gmm_phi.txt" # this is a 1 x n_tumor matrix with column headers being the tumor ids ### ALIGN THE TUMOR COLUMNS WITH c_beta FILE ###
   clinical_file: "clinical.processed.withCalendarAges.tsv"
-  output_gct_file: "neuroblastoma_deseq_scale_factor"
-  output_cls_file: "neuroblastoma_gmm_phi"
-  phi_var: "phi"
+  analysis: "original" # "original", "split1", "split2" or "adjusted": which mitotic age to use
 ---
   
 ```{r setup, include=FALSE}
@@ -27,6 +25,15 @@ proj_dir <- file.path(consts[['official_indir']], 'TARGET')
 
 out_dir <- file.path(proj_dir, 'GSEA')
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Mitotic age column and output file names for this analysis
+# ("original" uses phi and the plain file names; the others add ".<analysis>")
+stopifnot(params$analysis %in% c("original", "split1", "split2", "adjusted"))
+suffix <- if (params$analysis == "original") "" else paste0(".", params$analysis)
+phi_var <- paste0("phi", suffix)
+output_gct_file <- paste0("neuroblastoma_deseq_scale_factor", suffix)
+output_cls_file <- paste0("neuroblastoma_gmm_phi", suffix)
+cat("Analysis:", params$analysis, "| mitotic age:", phi_var, "\n")
 ```
 
 Expression count data must be normalized for between-sample comparisons. 
@@ -66,10 +73,10 @@ We load the c-beta values here to ensure that the final normalized count matrix 
 ```{r read_c_beta}
 # c_beta_measured <- read.table(file.path(proj_dir, params$c_beta_file), sep = "\t", header = FALSE)
 clinical <- read.table(file.path(proj_dir, params$clinical_file), sep='\t', header=T)
-clinical <- clinical[!is.na(clinical[, params$phi_var]), ]
+clinical <- clinical[!is.na(clinical[, phi_var]), ]
 c_beta_measured <- clinical
 # rownames(c_beta_measured) <- c_beta_measured$sampleID
-c_beta_measured <- c_beta_measured[, c('sampleID', params$phi_var)]
+c_beta_measured <- c_beta_measured[, c('sampleID', phi_var)]
 
 c_beta_measured <- t(c_beta_measured)
 
@@ -169,7 +176,7 @@ cat("The names in each dataset line up?",
 ```
 
 ```{r create_gct_outputs}
-.createGCT(deseq_normal, pth = out_dir, nm = params$output_gct_file)
+.createGCT(deseq_normal, pth = out_dir, nm = output_gct_file)
 ```
 
 ```{r save_cls_function}
@@ -186,5 +193,5 @@ cat("The names in each dataset line up?",
 ```
 
 ```{r create_cls_outputs}
-.createCLS(c_beta_measured, pth = out_dir, nm = params$output_cls_file)
+.createCLS(c_beta_measured, pth = out_dir, nm = output_cls_file)
 ```
