@@ -243,8 +243,8 @@ cat("This realignment worked:", all(tst), "\n")
 #### Cell Type Mapping Table
 
 The mapping of the LM22 cell types to the cell types of the adult (GSE35069)
-and cord blood lookup tables is saved as an Excel table in the "Supplementary
-Data" folder of the repository. It is the same for every `immune_reference`
+and cord blood lookup tables is saved as supplementary data S2, in tab "Data S2"
+of *Supplementary Data/Supplementary_Data.xlsx* in the repository. It is the same for every `immune_reference`
 (the PBMC reference doesn't use it).
 
 ```{r save_cell_type_mapping}
@@ -267,16 +267,7 @@ cell_type_mapping <- data.frame("LM22 cell type" = lm22_names,
                                 check.names = FALSE, row.names = NULL)
 knitr::kable(cell_type_mapping)
 
-writeWithoutOverwrite(
-  file.path(repo_dir, "Supplementary Data", "LM22_cell_type_mapping.xlsx"),
-  cell_type_mapping,
-  writeFunc = function(filepath, data) writexl::write_xlsx(data, filepath),
-  readFunc = function(filepath) as.data.frame(readxl::read_excel(filepath)),
-  compareFunc = function(data, existing_data) {
-    identical(colnames(data), colnames(existing_data)) &&
-      isTRUE(all.equal(data, existing_data, check.attributes = FALSE))
-  }
-)
+writeSupplementaryTab("Data S2", cell_type_mapping)
 ```
 
 #### Plot distributions of absolute proportions of immune cell types
