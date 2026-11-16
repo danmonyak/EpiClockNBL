@@ -763,6 +763,42 @@ def noteExistingOutputs(filepaths):
             print(f'  {fp}')
         print('Delete them first to save new results.\n')
 
+SUPPLEMENTARY_DATA_PATH = os.path.join(consts['repo_dir'], 'Supplementary Data', 'Supplementary_Data.xlsx')
+
+def writeSupplementaryTab(sheet_name, data, verbose=True):
+    '''
+    Save a table as one tab of the supplementary data workbook, keeping its other tabs
+    The same function is in save_util.R, for the tabs made by R code
+    Like writeWithoutOverwrite, raise OverwriteError if the tab exists with different contents
+
+    sheet_name: str - e.g. 'Data S1'
+    data: pd.DataFrame - saved without its index
+    verbose: boolean
+    '''
+    # Compare as text, since the workbook is read back as text
+    data = data.astype(str).reset_index(drop=True)
+
+    sheets = {}
+    if os.path.exists(SUPPLEMENTARY_DATA_PATH):
+        sheets = pd.read_excel(SUPPLEMENTARY_DATA_PATH, sheet_name=None, dtype=str)
+
+    if sheet_name in sheets:
+        if not sheets[sheet_name].equals(data):
+            raise OverwriteError(SUPPLEMENTARY_DATA_PATH,
+                                 f'Current output would overwrite alternative data in tab "{sheet_name}" of {SUPPLEMENTARY_DATA_PATH}')
+        if verbose:
+            print(f'Current output matches tab "{sheet_name}" of existing file.')
+    else:
+        sheets[sheet_name] = data
+        os.makedirs(os.path.dirname(SUPPLEMENTARY_DATA_PATH), exist_ok=True)
+        with pd.ExcelWriter(SUPPLEMENTARY_DATA_PATH, engine='openpyxl') as writer:
+            for name in sorted(sheets):
+                sheets[name].to_excel(writer, sheet_name=name, index=False)
+        if verbose:
+            print(f'Saved new tab "{sheet_name}".')
+    if verbose:
+        print(SUPPLEMENTARY_DATA_PATH)
+
 def safe_filename(s):
     # Convert accented chars into ASCII equivalents
     s = unicodedata.normalize('NFKD', s)
