@@ -193,10 +193,15 @@ coxResultsTable <- function(mod) {
   names(coef_table)[which(names(coef_table) == 'Pr(>|z|)')] = 'p'
   # Reformat
   coef_table <- coef_table[, -c(6, 7)]
-  # format(coef_table, digits=2)
-  coef_table[] <- lapply(coef_table, function(x) {
-    if (is.numeric(x)) signif(x, 2) else x
-  })
+  # Two decimal places, kept as text so that trailing zeros are shown (e.g. 1.10);
+  # p-values keep two significant figures, since small ones would round to 0.00
+  for (col in names(coef_table)) {
+    coef_table[[col]] <- if (col == "p") {
+      formatC(signif(coef_table[[col]], 2), format = "fg", digits = 2)
+    } else {
+      formatC(coef_table[[col]], format = "f", digits = 2)
+    }
+  }
   coef_table
 }
 ```
@@ -211,7 +216,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 schoenfeld_test <- cox.zph(surv.model)
@@ -231,7 +236,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 schoenfeld_test <- cox.zph(surv.model)
@@ -252,7 +257,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 
@@ -276,7 +281,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 
@@ -298,7 +303,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 schoenfeld_test <- cox.zph(surv.model)
@@ -319,7 +324,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 
@@ -341,7 +346,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 schoenfeld_test <- cox.zph(surv.model)
@@ -362,7 +367,7 @@ cat(sprintf('Used %d samples\n', summary(surv.model)$n))
 coef_table <- coxResultsTable(surv.model)
 
 # Display as a kable table
-kable(coef_table, caption = "Cox Proportional Hazards Model Summary") %>%
+kable(coef_table, caption = "Cox Proportional Hazards Model Summary", align = "r") %>%
   kable_styling(full_width = FALSE, position = "left")
 
 
