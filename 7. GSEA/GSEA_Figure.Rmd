@@ -19,7 +19,7 @@ library(jsonlite)
 
 consts <- read_json(file.path(repo_dir, 'config.json'))
 proj_dir <- file.path(consts[['official_indir']], 'TARGET')
-figure_outdir <- file.path(repo_dir, 'figures_revision')
+figure_outdir <- file.path(repo_dir, 'figures_revision', 'gsea_figures')
 dir.create(figure_outdir, recursive = TRUE, showWarnings = FALSE)
 
 in_dir <- file.path(proj_dir, 'GSEA')

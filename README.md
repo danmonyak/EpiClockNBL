@@ -367,7 +367,7 @@ Each script runs three steps, which take a few minutes in total:
 
 1. *GSEA_Data_Preprocessing.Rmd* normalizes the gene expression data and saves it, with the mitotic ages, as `.gct` and `.cls` files in *official_indir*/TARGET/GSEA.
 2. *Run_GSEA.R* runs GSEA on these files with the Hallmark gene sets and the settings in the table below. This needs an internet connection, since GSEA downloads the gene sets and chip file. The results are saved in a new folder in *official_indir*/TARGET/GSEA, named after the analysis and a timestamp, for example *original.Gsea.1783619023571*.
-3. *GSEA_Figure.Rmd* plots the gene sets with FDR q-value ≤ 0.01 from the latest results folder of that analysis, and saves the figure in `figures_revision` as *gsea_plot.svg*, *split1.gsea_plot.svg*, *split2.gsea_plot.svg* or *adjusted.gsea_plot.svg*.
+3. *GSEA_Figure.Rmd* plots the gene sets with FDR q-value ≤ 0.01 from the latest results folder of that analysis, and saves the figure in `figures_revision/gsea_figures` as *gsea_plot.svg*, *split1.gsea_plot.svg*, *split2.gsea_plot.svg* or *adjusted.gsea_plot.svg*.
 
 GSEA settings (all others are the GSEA defaults):
 
