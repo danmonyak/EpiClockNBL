@@ -209,6 +209,14 @@ def pipeline(verbose=True, make_figures=False, output_dir=DEFAULT_OUTPUT_DIR, ou
     else:
         np.savetxt(Clock_CpGs_filepath, Clock_CpGs, fmt='%s')
 
+    # The fCpG list of the main selection (not the split-half sensitivity analysis) is
+    # supplementary data S1, in the same order as the saved list
+    if output_dir == DEFAULT_OUTPUT_DIR:
+        nbl_util.writeSupplementaryTab(
+            'Data S1',
+            pd.DataFrame({'CpG ID': np.loadtxt(Clock_CpGs_filepath, dtype=str)})
+        )
+
     ## Save c_beta values of final tumors
     # c_beta_final_samples = c_beta
     # c_beta_filepath = os.path.join(output_dir, f'NBL.c_beta.txt')
