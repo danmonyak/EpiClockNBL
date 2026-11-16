@@ -159,6 +159,7 @@ Copy `config.json.example`, rename the copy to `config.json`, and fill in:
 
 - **official_indir** — path to a directory in an external file location (preferably Box) that can hold terabytes of data. All downloaded and intermediate data is stored here.
 - **Figure_data_dir** — path to a directory in an external file location (preferably Box).
+- **gsea_dir** — path to the folder where the GSEA desktop app is installed, for example `C:\\Program Files\\GSEA_4.4.0` (see [stage 7](#7-gsea)).
 - **Windows** — `true` if working on a Windows machine, otherwise `false`.
 
 On Windows, use double backslashes in the paths:
@@ -344,85 +345,43 @@ Open *NBL_survival.Rmd* in RStudio and click *Knit*. This makes the Kaplan-Meier
 
 ### 7. GSEA
 
-All files for this stage are inside `7. GSEA`.
+All files for this stage are inside `7. GSEA`. GSEA is run four times: with the mitotic age (`original`), with each half of the split from stage 3 (`split1` and `split2`), and with the purity-adjusted mitotic age (`adjusted`).
 
-#### a. Data preprocessing
+#### a. Setup
 
-Open *GSEA_Data_Preprocessing.Rmd* in RStudio and knit the file. This preprocesses the gene expression and mitotic age data for use in GSEA. In the output HTML document, note the paths of the output `.cls` and `.gct` files.
+1. Download and install GSEA 4.4.0 from https://www.gsea-msigdb.org/gsea/downloads.jsp
+2. Set *gsea_dir* in `config.json` to the folder where GSEA is installed (see [Setup](#5-configjson)).
 
 #### b. Run GSEA
 
-1. Download the GSEA software from https://www.gsea-msigdb.org/gsea/downloads.jsp
-2. Open GSEA, navigate to *Load data*, and click *Browse for files*.
-3. Load the `.cls` and `.gct` files.
-4. Navigate to *Run GSEA* and select the following options. Leave all other options at their defaults.
+Activate the general R environment (`epiclocknbl-r`). The run scripts are in `7. GSEA/bin`. From inside `7. GSEA`, run all four of the following. On Windows, run the `.bat` file of the same name instead of the `.sh` file, for example `bin\Run_GSEA_ORIGINAL.bat`.
 
-   | Field | Value |
-   |---|---|
-   | Expression dataset | neuroblastoma_deseq_scale_factor |
-   | Gene sets database | h.all.v2026.1.Hs.symbols.gmt |
-   | Permutations | 1000 |
-   | Phenotype labels | neuroblastoma_gmm_phi |
-   | Collapse/Remap to gene symbols | Collapse |
-   | Permutation type | gene_set |
-   | Chip platform | Human_Ensembl_Gene_ID_MSigDB.v2026.1.Hs.chip |
+```
+bash bin/Run_GSEA_ORIGINAL.sh
+bash bin/Run_GSEA_SPLIT1.sh
+bash bin/Run_GSEA_SPLIT2.sh
+bash bin/Run_GSEA_ADJUSTED.sh
+```
 
-   Under *Basic fields*:
+Each script runs three steps, which take a few minutes in total:
 
-   | Field | Value |
-   |---|---|
-   | Analysis name | original |
-   | Metric for ranking genes | Spearman |
-   | Save results in this folder | /PATH/TO/<official_indir>/TARGET/GSEA |
+1. *GSEA_Data_Preprocessing.Rmd* normalizes the gene expression data and saves it, with the mitotic ages, as `.gct` and `.cls` files in *official_indir*/TARGET/GSEA.
+2. *Run_GSEA.R* runs GSEA on these files with the Hallmark gene sets and the settings in the table below. This needs an internet connection, since GSEA downloads the gene sets and chip file. The results are saved in a new folder in *official_indir*/TARGET/GSEA, named after the analysis and a timestamp, for example *original.Gsea.1783619023571*.
+3. *GSEA_Figure.Rmd* plots the gene sets with FDR q-value ≤ 0.01 from the latest results folder of that analysis, and saves the figure in `figures_revision` as *gsea_plot.svg*, *split1.gsea_plot.svg*, *split2.gsea_plot.svg* or *adjusted.gsea_plot.svg*.
 
-   Under *Advanced fields*:
+GSEA settings (all others are the GSEA defaults):
 
-   | Field | Value |
-   |---|---|
-   | Seed for permutation | 0 |
+| Setting | Value |
+|---|---|
+| Gene sets database | h.all.v2026.1.Hs.symbols.gmt |
+| Chip platform | Human_Ensembl_Gene_ID_MSigDB.v2026.1.Hs.chip |
+| Collapse/Remap to gene symbols | Collapse |
+| Permutations | 1000 |
+| Permutation type | gene_set |
+| Metric for ranking genes | Spearman |
+| Seed for permutation | 0 |
 
-5. Select *Run* at the bottom of the page. GSEA should take about 90 seconds to run.
-
-#### c. Create GSEA figure
-
-1. Open *GSEA_Figure.Rmd* in RStudio.
-2. Click the dropdown next to *Knit* and choose *Knit with Parameters*.
-3. Look inside /PATH/TO/<official_indir>/TARGET/GSEA to find the GSEA output directory. Replace the *GSEA_output_dir_name* parameter with the name of that directory.
-4. Look inside the GSEA output directory to find the names of the *pos* and *neg* files. They should be in this format: *gsea_report_for_neuroblastoma_gmm_phi_pos_1234567890.tsv* and *gsea_report_for_neuroblastoma_gmm_phi_neg_1234567890.tsv*. Replace the *pos_file* and *neg_file* parameters with the respective filenames.
-5. Do not alter the other parameters.
-6. Click *Knit*.
-
-#### d. Sensitivity analysis
-
-Repeat steps a to c for each half of the split, with the following changes (shown for `split1`; repeat with `split2`).
-
-1. Knit *GSEA_Data_Preprocessing.Rmd* using *Knit with Parameters* and set:
-
-   | Parameter | Value |
-   |---|---|
-   | output_gct_file | neuroblastoma_deseq_scale_factor.split1 |
-   | output_cls_file | neuroblastoma_gmm_phi.split1 |
-   | phi_var | phi.split1 |
-
-2. When loading the files into GSEA, load *neuroblastoma_deseq_scale_factor.split1* and *neuroblastoma_gmm_phi.split1*.
-3. Enter `split1` as the *Analysis name* under *Basic fields*.
-4. When knitting *GSEA_Figure.Rmd*, enter `split1` for the *prefix* parameter.
-
-#### e. Purity-adjusted mitotic age
-
-Repeat steps a to c using the purity-adjusted mitotic age, with the following changes.
-
-1. Knit *GSEA_Data_Preprocessing.Rmd* using *Knit with Parameters* and set:
-
-   | Parameter | Value |
-   |---|---|
-   | output_gct_file | neuroblastoma_deseq_scale_factor.adjusted |
-   | output_cls_file | neuroblastoma_gmm_phi.adjusted |
-   | phi_var | phi.adjusted |
-
-2. When loading the files into GSEA, load *neuroblastoma_deseq_scale_factor.adjusted* and *neuroblastoma_gmm_phi.adjusted*.
-3. Enter `adjusted` as the *Analysis name* under *Basic fields*.
-4. When knitting *GSEA_Figure.Rmd*, enter `adjusted` for the *prefix* parameter.
+The same analysis can also be run in the GSEA desktop app instead of with *Run_GSEA.R*. Load the `.gct` and `.cls` files, choose the settings above, enter the analysis name (for example `original`) as the *Analysis name*, and save the results in *official_indir*/TARGET/GSEA. To make a figure from these results, knit *GSEA_Figure.Rmd* using *Knit with Parameters* and set *analysis* to the analysis name.
 
 ## Outputs and re-running
 
