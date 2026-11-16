@@ -5,9 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 params:
   analysis: "original" # "original", "split1", "split2" or "adjusted": the GSEA run to plot (its latest output folder is used)
-  names:
-    - "${\\phi}$"
-  fdr_limit: 0.01
+  xlab_annotations_ypos: -4.1
 ---
 
 ```{r setup, include=FALSE}
@@ -51,7 +49,8 @@ prefix <- if (params$analysis == "original") "" else params$analysis
 ```
 
 ```{r echo = FALSE}
-XLAB_ANNOTATIONS_YPOS <- -4.1
+NAMES <- c("${\\phi}$")
+FDR_LIMIT <- 0.01
 XLAB_ANNOTATIONS_FONTSIZE <- 9
 
 capitalizeEachWord <- function(s) {
@@ -168,7 +167,7 @@ extract_data <- function(fdr.limit) {
 }
 ```
 
-```{r echo = FALSE}
+```{r plot-function, echo = FALSE}
 plot_data <- function(data, name) {
   col_jco <- pal_jco("default")(10)
 
@@ -206,8 +205,8 @@ plot_data <- function(data, name) {
     xlab("Normalized Enrichment Score") +
     scale_y_continuous(breaks = 1:nrow(data), labels = data$NAME) + 
     scale_fill_manual(values = colors)+
-    annotation_custom(text_younger, xmax = -1, ymin = XLAB_ANNOTATIONS_YPOS, ymax = XLAB_ANNOTATIONS_YPOS) +
-    annotation_custom(text_older, xmin = 1, ymin = XLAB_ANNOTATIONS_YPOS, ymax = XLAB_ANNOTATIONS_YPOS) +
+    annotation_custom(text_younger, xmax = -1, ymin = params$xlab_annotations_ypos, ymax = params$xlab_annotations_ypos) +
+    annotation_custom(text_older, xmin = 1, ymin = params$xlab_annotations_ypos, ymax = params$xlab_annotations_ypos) +
     annotate(geom = "text",   # this annotation will likely be removed for publication
              x = c(rep(-1, sum(data$NES > 0)),
                    rep( 1, sum(data$NES < 0))), 
@@ -239,15 +238,15 @@ plot_data <- function(data, name) {
 }
 ```
 
-```{r echo = FALSE}
+```{r run-plotting, echo = FALSE}
 for (i in 1L:1L) {
    cat("\n")
-   cat("#### ", params$names[i], "\n")
+   cat("#### ", NAMES[i], "\n")
    cat("\n")
    
-  data <- extract_data(fdr.limit = params$fdr_limit)
+  data <- extract_data(fdr.limit = FDR_LIMIT)
   
-  plot_data(data = data, name = params$names[i]) |> print()
+  plot_data(data = data, name = NAMES[i]) |> print()
   cat("\n")
   cat("\n")
 }
