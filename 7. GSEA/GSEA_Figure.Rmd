@@ -4,13 +4,10 @@ author: "Shannon T. Holloway"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  GSEA_output_dir_name: "original.Gsea.1783612994726"
-  pos_file: "gsea_report_for_neuroblastoma_gmm_phi_pos_1783612994726.tsv"
-  neg_file: "gsea_report_for_neuroblastoma_gmm_phi_neg_1783612994726.tsv"
+  analysis: "original" # "original", "split1", "split2" or "adjusted": the GSEA run to plot (its latest output folder is used)
   names:
     - "${\\phi}$"
   fdr_limit: 0.01
-  prefix: ""
 ---
 
 ```{r setup, include=FALSE}
@@ -26,6 +23,31 @@ figure_outdir <- file.path(repo_dir, 'figures_revision')
 dir.create(figure_outdir, recursive = TRUE, showWarnings = FALSE)
 
 in_dir <- file.path(proj_dir, 'GSEA')
+```
+
+```{r find_gsea_results, echo = FALSE, comment = NA}
+# GSEA saves each run in a folder named <analysis>.Gsea.<timestamp>; use the latest one
+stopifnot(params$analysis %in% c("original", "split1", "split2", "adjusted"))
+results_dirs <- list.files(in_dir, pattern = paste0("^", params$analysis, "\\.Gsea\\.[0-9]+$"))
+if (length(results_dirs) == 0) stop("No GSEA results folder for ", params$analysis, " in ", in_dir)
+timestamps <- as.numeric(sub(".*\\.Gsea\\.", "", results_dirs))
+results_dir <- file.path(in_dir, results_dirs[which.max(timestamps)])
+cat("GSEA results folder:", basename(results_dir), "\n")
+if (length(results_dirs) > 1) {
+  cat("Older results folders, not used:", setdiff(results_dirs, basename(results_dir)), "\n")
+}
+
+# Reports of the positively and negatively enriched gene sets
+findReport <- function(direction) {
+  report <- list.files(results_dir, pattern = paste0("^gsea_report_for_.*_", direction, "_[0-9]+\\.tsv$"))
+  if (length(report) != 1) stop("Expected one ", direction, " report in ", results_dir)
+  file.path(results_dir, report)
+}
+pos_file <- findReport("pos")
+neg_file <- findReport("neg")
+
+# Figure file name: gsea_plot.svg, or <analysis>.gsea_plot.svg for the other runs
+prefix <- if (params$analysis == "original") "" else params$analysis
 ```
 
 ```{r echo = FALSE}
@@ -127,8 +149,8 @@ formatFDR <- function(fdr, limit=0.0001) {
 
 ```{r echo = FALSE}
 extract_data <- function(fdr.limit) {
-  data_pos <- read.csv(file.path(in_dir, params$GSEA_output_dir_name, params$pos_file), sep = "\t")
-  data_neg <- read.csv(file.path(in_dir, params$GSEA_output_dir_name, params$neg_file), sep = "\t")
+  data_pos <- read.csv(pos_file, sep = "\t")
+  data_neg <- read.csv(neg_file, sep = "\t")
   df <- rbind(data_pos, data_neg)
   fdr <- df$FDR.q.val <= fdr.limit
   df <- df[fdr, ]
@@ -169,7 +191,7 @@ plot_data <- function(data, name) {
   
   # Number of tumors, from the copy of the phenotype (.cls) file that GSEA saves in its output folder
   # The values are on the first line that is not blank or a comment, separated by spaces
-  cls_path <- list.files(file.path(in_dir, params$GSEA_output_dir_name, "edb"), pattern = "\\.cls$", full.names = TRUE)
+  cls_path <- list.files(file.path(results_dir, "edb"), pattern = "\\.cls$", full.names = TRUE)
   stopifnot(length(cls_path) == 1)
   cls_lines <- trimws(readLines(cls_path))
   values_line <- cls_lines[cls_lines != "" & !startsWith(cls_lines, "#")][1]
@@ -208,8 +230,8 @@ plot_data <- function(data, name) {
     coord_cartesian(clip="off")
   
   filename <- "gsea_plot.svg"
-  if (params$prefix != "") {
-    filename <- paste(params$prefix, "gsea_plot.svg", sep=".")
+  if (prefix != "") {
+    filename <- paste(prefix, "gsea_plot.svg", sep=".")
   }
   ggsave(file.path(figure_outdir, filename), plot = gg,
          width=7, height=7.5, device='svg')
