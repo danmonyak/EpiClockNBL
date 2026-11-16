@@ -1,5 +1,6 @@
 {
     "official_indir": "/PATH/TO/Datasets",
     "Figure_data_dir": "/PATH/TO/Figure Data",
+    "gsea_dir": "/PATH/TO/GSEA_4.4.0",
     "Windows": false
 }
