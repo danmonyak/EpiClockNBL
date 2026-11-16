@@ -55,3 +55,45 @@ writeWithoutOverwrite <- function(filepath, data, writeFunc, readFunc,
   if (verbose) cat(filepath, "\n")
   invisible(NULL)
 }
+
+# Save a table as one tab of the supplementary data workbook, keeping its other tabs
+# (same behavior as writeSupplementaryTab in EpiClockNBL/util.py, which writes the other tabs)
+#   sheet_name: name of the tab, for example "Data S2"
+#   data: data frame to save (without row names)
+#   verbose: print what happened
+# If the tab exists with different contents, an error of class "overwriteError" is raised.
+writeSupplementaryTab <- function(sheet_name, data, verbose = TRUE) {
+  filepath <- file.path(repo_dir, "Supplementary Data", "Supplementary_Data.xlsx")
+
+  # Compare as text, since the workbook is read back as text
+  data <- as.data.frame(lapply(data, as.character), check.names = FALSE)
+  rownames(data) <- NULL
+
+  sheets <- list()
+  if (file.exists(filepath)) {
+    for (name in readxl::excel_sheets(filepath)) {
+      sheets[[name]] <- as.data.frame(readxl::read_excel(filepath, sheet = name, col_types = "text"),
+                                      check.names = FALSE)
+    }
+  }
+
+  if (sheet_name %in% names(sheets)) {
+    if (!isTRUE(all.equal(data, sheets[[sheet_name]], check.attributes = FALSE)) ||
+        !identical(colnames(data), colnames(sheets[[sheet_name]]))) {
+      stop(structure(
+        class = c("overwriteError", "error", "condition"),
+        list(message = paste0("Current output would overwrite alternative data in tab \"", sheet_name, "\" of ", filepath),
+             call = sys.call(-1),
+             filepath = filepath)
+      ))
+    }
+    if (verbose) cat("Current output matches tab \"", sheet_name, "\" of existing file.\n", sep = "")
+  } else {
+    sheets[[sheet_name]] <- data
+    dir.create(dirname(filepath), recursive = TRUE, showWarnings = FALSE)
+    writexl::write_xlsx(sheets[sort(names(sheets))], filepath)
+    if (verbose) cat("Saved new tab \"", sheet_name, "\".\n", sep = "")
+  }
+  if (verbose) cat(filepath, "\n")
+  invisible(NULL)
+}
